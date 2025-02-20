@@ -1,31 +1,23 @@
-* 在 src/api/chat_api.py 中启动 Flask 应用：
+一个 AI 分析 RSS 的工具
 
-`python src/api/chat_api.py`
-
-或使用 `run.py` 启动：
-
-`python run.py`
-
-* 运行测试：
-
-``` python
-python -m unittest tests.test_api
-python -m unittest tests.test_ai_chat
-```
+1. 自动分类订阅的 RSS
+2. 将 RSS 信息发送到指定邮箱，默认早9晚6发送
+3. 可使用 ollama 本地模型或 coze 平台模型(推荐)
 
 * 注意事项
 依赖管理：确保安装了所需的 Python 包：
 
 `pip install flask requests openai flask_mail feedparser`
 
-
+# rss 示例
 https://github.com/weekend-project-space/top-rss-list
 
-# 运行所有测试
+# 测试
+## 运行所有测试
 pytest
 
-# 运行特定测试文件
+## 运行特定测试文件
 pytest tests/test_models/test_rss.py
 
-# 生成覆盖率报告
+## 生成覆盖率报告
 pytest --cov-report html
