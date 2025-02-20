@@ -2,7 +2,8 @@
 
 1. 自动分类订阅的 RSS
 2. 将 RSS 信息发送到指定邮箱，默认早9晚6发送
-3. 可使用 ollama 本地模型或 coze 平台模型(推荐)
+3. 使用 langchian 接入 ollama 本地模型或 coze 平台模型(推荐)
+4. 配置 langsmith 可查看详细数据
 
 * 注意事项
 依赖管理：确保安装了所需的 Python 包：
