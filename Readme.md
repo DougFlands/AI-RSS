@@ -13,6 +13,9 @@
 # rss 示例
 https://github.com/weekend-project-space/top-rss-list
 
+# 接口文档
+https://apifox.com/apidoc/shared-d9df3dbf-6f83-480d-ae0c-fdc7c65ab8aa
+
 # 测试
 ## 运行所有测试
 pytest
