@@ -25,3 +25,8 @@ pytest tests/test_models/test_rss.py
 
 ## 生成覆盖率报告
 pytest --cov-report html
+
+# TODO:
+* 数据存储在向量数据库
+* 增加向量数据库检索
+* 联网搜索
