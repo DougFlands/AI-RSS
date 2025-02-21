@@ -17,5 +17,5 @@ if __name__ == "__main__":
     thread1.start()
     thread2.start()
     
-    app.run(debug=bool(getEnvVariable("DEBUG_MODE")))
+    app.run(host='0.0.0.0',debug=bool(getEnvVariable("DEBUG_MODE")))
     

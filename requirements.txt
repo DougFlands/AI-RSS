@@ -1,0 +1,24 @@
+# Flask 及其扩展
+Flask==3.1.0
+Flask-Mail==0.10.0
+
+# LangChain 相关
+langchain==0.3.19
+langchain-community==0.3.17
+langchain-core==0.3.36
+langchain-ollama==0.2.3
+
+# RSS 处理
+feedparser==6.0.11
+
+# 环境变量管理
+python-dotenv==0.21.0
+
+# AI 相关
+cozepy==0.12.0
+ollama==0.4.7
+
+# 测试相关
+pytest==8.3.4
+pytest-mock==3.14.0
+

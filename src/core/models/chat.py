@@ -71,7 +71,7 @@ class AIChat:
             bot_id=bot_id,
             user_id=user_id,
             additional_messages=[
-                Message.build_user_question_text(user_input),
+                Message.build_user_question_text(content=user_input+self.system_prompt),
             ],
         )   
 
