@@ -1,13 +1,18 @@
 from datetime import datetime
 import time
 from flask import Flask
-from flask_mail import Mail
 import requests
+from flask_cors import CORS
 from app.extensions import mail
 from src.core.utils.config import getEnvVariable
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                # static_folder='../vue_app/dist', static_url_path='/'
+                )
+    
+    # 启用CORS
+    CORS(app)
     
     app.config.from_pyfile("../instance/config.py") 
     mail.init_app(app)
@@ -23,6 +28,10 @@ def create_app():
     
     from src.api.trigger import trigger_bp
     app.register_blueprint(trigger_bp)
+    
+    # @app.route('/')
+    # def index():
+    #     return app.send_static_file('index.html')
 
     return app
 

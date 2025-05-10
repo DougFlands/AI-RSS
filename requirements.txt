@@ -1,6 +1,7 @@
 # Flask 及其扩展
 Flask==3.1.0
 Flask-Mail==0.10.0
+flask-cors==4.0.1
 
 # LangChain 相关
 langchain==0.3.19
@@ -18,7 +19,11 @@ python-dotenv==0.21.0
 cozepy==0.12.0
 ollama==0.4.7
 
+# MongoDB
+pymongo==4.7.0
+
 # 测试相关
 pytest==8.3.4
 pytest-mock==3.14.0
 
+chromadb==1.0.8
