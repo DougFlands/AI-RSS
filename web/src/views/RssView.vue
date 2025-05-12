@@ -9,20 +9,23 @@
         :available-dates="availableDates"
         :initial-filter-type="filterType"
         :initial-selected-date="selectedDate"
+        :initial-source-id="selectedSourceId"
+        :sources="sourcesData"
+        :is-sources-loading="sourcesQuery.isLoading.value"
         @filter-change="handleFilterChange"
         @date-change="handleDateSelected"
+        @source-change="handleSourceChange"
         @toggle-sidebar="toggleSidebar"
       />
 
       <!-- 使用封装的内容组件 -->
-      <RssContent 
+      <RssContent
         ref="rssContent"
-        :feeds="displayedFeeds" 
+        :feeds="displayedFeeds"
         :is-loading="rssQuery.isLoading.value"
         :has-more-items="hasMoreItems"
         @load-more="loadMore"
       />
-
     </div>
 
     <!-- 使用 Drawer 组件替换原来的右侧边栏 -->
@@ -58,6 +61,10 @@ import RssContent from "@/components/RssContent.vue";
 // 使用 TanStack Query 获取日期列表
 const datesQuery = server.rss.useRssDatesQuery();
 
+// 获取订阅源列表
+const sourcesQuery = server.rss.useRssSourcesQuery();
+const sourcesData = computed(() => sourcesQuery.data?.value || []);
+
 // 按日期排序（降序）
 const sortedDates = computed(() => {
   const dates = datesQuery.data?.value || [];
@@ -71,13 +78,14 @@ const sortedDates = computed(() => {
 
 // 获取最新日期
 const latestDate = computed(() => {
-  return sortedDates.value.length > 0 ? sortedDates.value[0].date : 'all';
+  return sortedDates.value.length > 0 ? sortedDates.value[0].date : "all";
 });
 
 // 数据状态
-const filterType = ref("all");
+const filterType = ref("recommended");
 const selectedDate = ref("all"); // 初始化为 all，稍后会更新为最新日期
 const keywordFilter = ref("");
+const selectedSourceId = ref(""); // 添加源筛选状态
 
 // 使用 Drawer 组件的状态
 const drawerVisible = ref(false);
@@ -97,18 +105,24 @@ const toggleSidebar = () => {
 };
 
 // 使用 TanStack Query 获取 RSS 数据
-const rssQuery = server.rss.useRssQuery(
-  selectedDate.value === "all" ? undefined : selectedDate.value
-);
+const rssQuery = server.rss.useRssQuery({
+  date: selectedDate.value === "all" ? undefined : selectedDate.value,
+  preference: filterType.value === "all" ? undefined : filterType.value,
+  source_id: selectedSourceId.value || undefined,
+});
 
 // 当日期数据加载完成时，设置默认日期为最新日期
-watch(() => datesQuery.data.value, (newData) => {
-  if (newData && newData.length > 0 && selectedDate.value === 'all') {
-    nextTick(() => {
-      selectedDate.value = latestDate.value;
-    });
-  }
-}, { immediate: true });
+watch(
+  () => datesQuery.data.value,
+  (newData) => {
+    if (newData && newData.length > 0 && selectedDate.value === "all") {
+      nextTick(() => {
+        selectedDate.value = latestDate.value;
+      });
+    }
+  },
+  { immediate: true }
+);
 
 // 处理日期选择
 const handleDateSelected = (date) => {
@@ -124,6 +138,12 @@ const availableDates = computed(() => {
 // 处理筛选变化
 const handleFilterChange = (type) => {
   filterType.value = type;
+  resetPagination();
+};
+
+// 处理源筛选变化
+const handleSourceChange = (sourceId) => {
+  selectedSourceId.value = sourceId;
   resetPagination();
 };
 
@@ -152,8 +172,12 @@ const feeds = computed(() => {
     // 遍历所有来源的数据
     for (let sourceIndex = 0; sourceIndex < responseData.ids.length; sourceIndex++) {
       const sourceIds = responseData.ids[sourceIndex];
-      const sourceDocuments = responseData.documents ? responseData.documents[sourceIndex] : [];
-      const sourceMetadatas = responseData.metadatas ? responseData.metadatas[sourceIndex] : [];
+      const sourceDocuments = responseData.documents
+        ? responseData.documents[sourceIndex]
+        : [];
+      const sourceMetadatas = responseData.metadatas
+        ? responseData.metadatas[sourceIndex]
+        : [];
 
       // 遍历当前来源的所有条目
       for (let itemIndex = 0; itemIndex < sourceIds.length; itemIndex++) {
@@ -184,6 +208,17 @@ const filteredFeeds = computed(() => {
     });
   }
 
+  // 应用源过滤
+  if (selectedSourceId.value) {
+    const source = sourcesData.value.find(
+      (source) => source._id === selectedSourceId.value
+    );
+    result = result.filter((feed) => {
+      const url = feed.metadata.source || "";
+      return url === source.url;
+    });
+  }
+
   // 应用关键词过滤
   if (keywordFilter.value.trim()) {
     const keyword = keywordFilter.value.trim().toLowerCase();
@@ -207,7 +242,7 @@ const displayedFeeds = computed(() => {
 // 加载更多内容（前端分页）
 const loadMore = () => {
   if (!hasMoreItems.value || rssQuery.isLoading.value) return;
-  
+
   // 增加页码以显示更多内容
   currentPage.value++;
 };

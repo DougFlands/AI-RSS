@@ -16,7 +16,6 @@ class TestRss(unittest.TestCase):
             ]
         }
 
-    @patch('src.core.models.rss.getJsonConfig')
     @patch('src.core.models.rss.ParseRss')
     def test_output_rss(self, mock_parse_rss, mock_get_config):
         # 设置模拟数据

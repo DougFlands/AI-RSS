@@ -111,4 +111,76 @@ class MongoDBStorage:
             result = self.rss_sources.delete_one({"_id": source_id})
             return result.deleted_count > 0
         except:
-            return False 
+            return False
+    
+    def update_rss_source(self, source_id, url=None, name=None):
+        """
+        更新RSS源信息
+        source_id: RSS源ID
+        url: 新的URL，可选
+        name: 新的名称，可选
+        返回: 更新后的RSS源数据或None（如果未找到）
+        """
+        try:
+            source_id = ObjectId(source_id)
+            
+            # 构建更新数据
+            update_data = {"updated_at": datetime.now()}
+            if url:
+                update_data["url"] = url
+            if name:
+                update_data["name"] = name
+            
+            # 更新记录
+            result = self.rss_sources.update_one(
+                {"_id": source_id},
+                {"$set": update_data}
+            )
+            
+            # 如果记录存在并已更新
+            if result.matched_count > 0:
+                # 获取更新后的数据
+                updated_source = self.rss_sources.find_one({"_id": source_id})
+                return self._convert_objectid(updated_source)
+            return None
+            
+        except Exception as e:
+            print(f"更新RSS源出错: {e}")
+            return None
+    
+    def store_rss_url(self, url, name=None):
+        """
+        存储RSS URL
+        url: RSS源的URL
+        name: 可选，RSS源的名称
+        返回: 添加成功返回True，已存在返回False
+        """
+        # 检查URL是否已存在
+        existing = self.db.rss_urls.find_one({"url": url})
+        if existing:
+            return False
+        
+        # 存储新URL
+        self.db.rss_urls.insert_one({
+            "url": url,
+            "name": name,
+            "created_at": datetime.now()
+        })
+        return True
+    
+    def get_all_rss_urls(self):
+        """
+        获取所有存储的RSS URL
+        返回: URL列表 [{"url": "http://...", "name": "源名称"}, ...]
+        """
+        urls = list(self.rss_sources.find().sort("created_at", -1))
+        return urls
+    
+    def delete_rss_url(self, url):
+        """
+        删除RSS URL
+        url: 要删除的RSS URL
+        返回: 删除成功返回True，不存在返回False
+        """
+        result = self.db.rss_urls.delete_one({"url": url})
+        return result.deleted_count > 0 

@@ -267,4 +267,28 @@ class RSSStorage:
                     for date, count in date_counts.items()]
         date_list.sort(key=lambda x: x['date'], reverse=True)
         
-        return date_list 
+        return date_list
+    
+    def store_rss_url(self, url, name=None):
+        """
+        存储RSS URL
+        url: RSS源的URL
+        name: 可选，RSS源的名称
+        返回: 添加成功返回True，已存在返回False
+        """
+        return self.mongo_storage.store_rss_url(url, name)
+    
+    def get_all_rss_urls(self):
+        """
+        获取所有存储的RSS URL
+        返回: URL列表 [{"url": "http://...", "name": "源名称"}, ...]
+        """
+        return self.mongo_storage.get_all_rss_urls()
+    
+    def delete_rss_url(self, url):
+        """
+        删除RSS URL
+        url: 要删除的RSS URL
+        返回: 删除成功返回True，不存在返回False
+        """
+        return self.mongo_storage.delete_rss_url(url) 

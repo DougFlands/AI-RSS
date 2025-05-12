@@ -28,7 +28,8 @@ def GetRss():
 def GetAllRss():
     limit = request.args.get('limit', 20, type=int)
     date = request.args.get('date')
-    sort_by_date = request.args.get('sort', 'desc').lower() == 'desc'  # 默认按时间从新到旧排序
+    preference = request.args.get('preference')  # 添加喜好状态筛选参数：liked/disliked/unmarked/recommended/all
+    source_id = request.args.get('source_id')  # 添加订阅源筛选参数
     
     # 验证日期格式
     if date:
@@ -92,6 +93,29 @@ def GetAllRss():
             
             # 从新到旧排序 (降序)
             items.sort(key=sort_key, reverse=True)
+            
+            # 根据喜好状态筛选
+            if preference:
+                filtered_items = []
+                for item in items:
+                    pref = item['metadata'].get('user_preference')
+                    
+                    if preference == 'liked' and pref and pref.get('is_liked'):
+                        filtered_items.append(item)
+                    elif preference == 'disliked' and pref and not pref.get('is_liked'):
+                        filtered_items.append(item)
+                    elif preference == 'unmarked' and not pref:
+                        filtered_items.append(item)
+                    elif preference == 'recommended':
+                        filtered_items.append(item)
+                    elif preference == 'all':
+                        filtered_items.append(item)
+                
+                items = filtered_items
+            
+            # 根据订阅源筛选
+            if source_id:
+                items = [item for item in items if item['metadata'].get('source_id') == source_id]
             
             # 重构结果
             feeds = {
@@ -178,3 +202,40 @@ def DeleteSource(source_id):
             return jsonify({'error': 'RSS source not found'}), 404
     except Exception as e:
         return jsonify({'error': f'Failed to delete RSS source: {str(e)}'}), 500
+
+@rss_bp.route('/sources/<source_id>', methods=['PUT'])
+def UpdateSource(source_id):
+    """
+    修改RSS订阅源
+    """
+    data = request.get_json()
+    # 验证参数
+    if not data:
+        return jsonify({'error': 'Missing update parameters'}), 400
+    
+    # 可以更新的字段
+    url = data.get('url')
+    name = data.get('name')
+    
+    # 至少需要一个更新字段
+    if not url and not name:
+        return jsonify({'error': 'At least one field (url or name) is required for update'}), 400
+    try:
+        # 如果提供了新的URL，验证URL是否有效
+        if url:
+            try:
+                # 尝试解析RSS，验证URL有效性
+                entries = ParseRss(url)
+                if not entries:
+                    return jsonify({'error': 'Invalid RSS feed or no entries found'}), 400
+            except Exception as e:
+                return jsonify({'error': f'Failed to parse RSS: {str(e)}'}), 400
+        
+        # 更新RSS源
+        result = rss_storage.mongo_storage.update_rss_source(source_id, url, name)
+        if result:
+            return jsonify({'success': True, 'message': 'RSS source updated', 'data': result})
+        else:
+            return jsonify({'error': 'RSS source not found'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Failed to update RSS source: {str(e)}'}), 500

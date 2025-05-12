@@ -11,13 +11,21 @@ export const RSS_QUERIES = {
   all: 'rss-all',
   dates: 'rss-dates',
   search: 'rss-search',
+  sources: 'rss-sources',
 }
 
 // 获取所有 RSS
-export const useRssQuery = (date?: string) => {
+export interface RssQueryParams {
+  date?: string
+  preference?: 'liked' | 'disliked' | 'unmarked' | 'recommended' | 'all'
+  source_id?: string
+}
+
+// 获取所有 RSS
+export const useRssQuery = (params?: RssQueryParams) => {
   return useQuery({
-    queryKey: [RSS_QUERIES.all, date],
-    queryFn: () => api.rss.getAllRss({ date }),
+    queryKey: [RSS_QUERIES.all, params],
+    queryFn: () => api.rss.getAllRss(params),
     // 禁用不必要的选项
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -60,5 +68,17 @@ export const useUpdateRssPreferenceMutation = () => {
       // 成功后刷新 RSS 数据
       queryClient.invalidateQueries({ queryKey: [RSS_QUERIES.all] })
     },
+  })
+}
+
+// 获取RSS订阅源列表
+export const useRssSourcesQuery = () => {
+  return useQuery({
+    queryKey: [RSS_QUERIES.sources],
+    queryFn: () => api.rss.getRssSources(),
+    // 禁用不必要的选项
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
   })
 } 
