@@ -47,7 +47,7 @@ def search_rss_feeds(query, n_results=5):
 
 def get_all_rss_feeds(limit=20):
     """
-    获取所有RSS feed，并按用户喜好排序
+    获取所有RSS feed，按发布日期从新到旧排序
     limit: 返回结果数量
     """
     return rss_storage.get_all_feeds(limit)

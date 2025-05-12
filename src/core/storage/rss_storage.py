@@ -59,17 +59,110 @@ class RSSStorage:
         )
         return self._rank_results_by_preference(results)
     
-    def get_all_feeds(self, limit=20):
+    def get_all_feeds(self, limit=20, date=None):
         """
         获取所有RSS feed
         limit: 限制返回结果数量
+        date: 可选，按日期过滤，格式为 YYYY-MM-DD
         """
-        # Chroma没有直接获取所有数据的方法，但我们可以使用空查询来获取
-        results = self.collection.query(
-            query_texts=[""],
-            n_results=limit
-        )
-        return self._rank_results_by_preference(results)
+        # 获取所有数据
+        results = self.collection.get()
+        
+        # 如果结果为空或格式不符合预期，返回空结果
+        if not results or 'ids' not in results or not results['ids']:
+            return {'ids': [[]], 'documents': [[]], 'metadatas': [[]]}
+        
+        # 如果指定了日期，进行过滤
+        if date:
+            filtered_ids = []
+            filtered_documents = []
+            filtered_metadatas = []
+            
+            for i, metadata in enumerate(results.get('metadatas', [])):
+                if 'pub_date' in metadata:
+                    try:
+                        # 尝试多种日期格式
+                        try:
+                            pub_date = datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                        except ValueError:
+                            try:
+                                pub_date = datetime.strptime(metadata['pub_date'], '%Y-%m-%d %H:%M:%S')
+                            except ValueError:
+                                pub_date = datetime.strptime(metadata['pub_date'], '%Y-%m-%d')
+                        
+                        if pub_date.strftime('%Y-%m-%d') == date:
+                            filtered_ids.append(results['ids'][i])
+                            filtered_documents.append(results['documents'][i])
+                            filtered_metadatas.append(metadata)
+                    except (ValueError, TypeError):
+                        continue
+            
+            results = {
+                'ids': [filtered_ids],
+                'documents': [filtered_documents],
+                'metadatas': [filtered_metadatas]
+            }
+        
+        # 为结果添加喜好信息，但不排序
+        preferences = {pref["feed_id"]: pref for pref in self.mongo_storage.get_all_preferences()}
+        
+        # 确保数据结构正确
+        if 'ids' in results and results['ids'] and len(results['ids']) > 0:
+            if isinstance(results['ids'][0], list):
+                # 添加用户偏好信息
+                for i, doc_id in enumerate(results['ids'][0]):
+                    pref = preferences.get(doc_id, None)
+                    if 'metadatas' in results and results['metadatas'] and i < len(results['metadatas'][0]):
+                        results['metadatas'][0][i]['user_preference'] = pref
+                        
+                # 按日期排序（从新到旧）
+                if 'metadatas' in results and results['metadatas'] and len(results['metadatas'][0]) > 0:
+                    items = []
+                    for i in range(len(results['ids'][0])):
+                        item = {
+                            'id': results['ids'][0][i],
+                            'document': results['documents'][0][i] if 'documents' in results and results['documents'] else None,
+                            'metadata': results['metadatas'][0][i] if 'metadatas' in results and results['metadatas'] else {}
+                        }
+                        items.append(item)
+                    
+                    # 按发布日期排序
+                    def sort_key(item):
+                        try:
+                            metadata = item['metadata']
+                            if 'pub_date' in metadata:
+                                try:
+                                    return datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                                except ValueError:
+                                    try:
+                                        return datetime.strptime(metadata['pub_date'], '%Y-%m-%d %H:%M:%S')
+                                    except ValueError:
+                                        return datetime.strptime(metadata['pub_date'], '%Y-%m-%d')
+                        except (ValueError, TypeError):
+                            pass
+                        return datetime(1970, 1, 1)  # 默认日期为早期时间
+                    
+                    # 按日期从新到旧排序
+                    items.sort(key=sort_key, reverse=True)
+                    
+                    # 限制结果数量
+                    items = items[:limit]
+                    
+                    # 重构结果
+                    results = {
+                        'ids': [[item['id'] for item in items]],
+                        'documents': [[item['document'] for item in items]] if 'documents' in results else None,
+                        'metadatas': [[item['metadata'] for item in items]] if 'metadatas' in results else None
+                    }
+            else:
+                # 数据是平面结构，需要转为嵌套结构
+                results['ids'] = [results['ids']]
+                if 'documents' in results and results['documents']:
+                    results['documents'] = [results['documents']]
+                if 'metadatas' in results and results['metadatas']:
+                    results['metadatas'] = [results['metadatas']]
+        
+        return results
     
     def _rank_results_by_preference(self, results):
         """
@@ -126,4 +219,33 @@ class RSSStorage:
         """
         存储用户对RSS的喜好
         """
-        return self.mongo_storage.store_preference(feed_id, is_liked, reason) 
+        return self.mongo_storage.store_preference(feed_id, is_liked, reason)
+    
+    def get_dates_with_data(self):
+        """
+        获取所有有RSS数据的日期列表
+        返回格式: [{"date": "2024-03-20", "count": 10}, ...]
+        """
+        # 获取所有数据
+        results = self.collection.get()
+        
+        # 统计每个日期的数据量
+        date_counts = {}
+        for metadata in results.get('metadatas', []):
+            if 'pub_date' in metadata:
+                try:
+                    # 解析日期
+                    pub_date = datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                    date_str = pub_date.strftime('%Y-%m-%d')
+                    
+                    # 更新计数
+                    date_counts[date_str] = date_counts.get(date_str, 0) + 1
+                except (ValueError, TypeError):
+                    continue
+        
+        # 转换为列表格式并按日期排序
+        date_list = [{"date": date, "count": count} 
+                    for date, count in date_counts.items()]
+        date_list.sort(key=lambda x: x['date'], reverse=True)
+        
+        return date_list 

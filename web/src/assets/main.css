@@ -1,0 +1,77 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义样式 */
+:root {
+  --sidebar-width: 250px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 100%;
+  }
+  
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .sidebar.show {
+    left: 0;
+  }
+  
+  .rss-content {
+    margin-left: 0 !important;
+  }
+}
+
+/* 通用样式 */
+.rss-container {
+  @apply min-h-screen bg-gray-50;
+}
+
+.sidebar {
+  @apply bg-white shadow-md;
+  width: var(--sidebar-width);
+}
+
+.rss-content {
+  @apply p-4;
+  margin-left: var(--sidebar-width);
+}
+
+.rss-search {
+  @apply mb-4 flex flex-wrap gap-2;
+}
+
+.search-input {
+  @apply flex-1 min-w-[200px];
+}
+
+.rss-filter {
+  @apply mb-4;
+}
+
+.rss-feed-list {
+  @apply space-y-4;
+}
+
+.loading-state,
+.empty-state {
+  @apply mt-8;
+}
+
+.pagination {
+  @apply mt-4 flex justify-center;
+}
+
+/* 移动端菜单按钮 */
+.mobile-menu-btn {
+  @apply fixed top-4 left-4 z-50 md:hidden;
+  @apply p-2 rounded-lg bg-white shadow-md;
+} 

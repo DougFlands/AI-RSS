@@ -1,202 +1,219 @@
 <template>
-  <div class="rss-item" :class="{ 'liked': isLiked === true, 'disliked': isLiked === false }">
-    <div class="rss-item-header">
-      <h3 class="rss-item-title">
-        <a :href="item.metadata.link" target="_blank">{{ item.metadata.title }}</a>
-      </h3>
-      <div class="rss-item-meta">
-        <span class="rss-item-source">来源: {{ item.metadata.source }}</span>
-        <span class="rss-item-date">{{ formatDate(item.metadata.pub_date) }}</span>
+  <div class="bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition-shadow">
+    <div class="flex flex-col space-y-1.5">
+      <!-- 标题和链接 -->
+      <div class="flex items-start justify-between">
+        <h3 class="text-base font-medium text-gray-800 hover:text-blue-600 line-clamp-2">
+          <a :href="item.metadata.link" target="_blank" class="no-underline">
+            {{ item.metadata.title }}
+          </a>
+        </h3>
+        <div class="flex items-center space-x-1 ml-2">
+          <!-- 喜欢按钮 -->
+          <button
+            v-if="isLiked === null"
+            @click="toggleLike(true)"
+            class="p-1 text-gray-400 hover:text-green-500 transition-colors border-0 bg-transparent outline-none focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+            </svg>
+          </button>
+          <button
+            v-else-if="isLiked"
+            @click="toggleLike(false)"
+            class="p-1 text-green-500 hover:text-gray-400 transition-colors border-0 bg-transparent outline-none focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+            </svg>
+          </button>
+          <!-- 不喜欢按钮 -->
+          <button
+            v-if="isLiked === false"
+            @click="showDislikeDialog"
+            class="p-1 text-red-500 hover:text-gray-400 transition-colors border-0 bg-transparent outline-none focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+            </svg>
+          </button>
+          <button
+            v-else
+            @click="showDislikeDialog"
+            class="p-1 text-gray-400 hover:text-red-500 transition-colors border-0 bg-transparent outline-none focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="rss-item-content" v-html="formatContent(item.document)"></div>
-    <div class="rss-item-actions">
-      <el-button 
-        type="primary" 
-        size="small" 
-        :class="{ 'is-active': isLiked === true }"
-        @click="toggleLike(true)">
-        {{ isLiked === true ? '已喜欢' : '喜欢' }}
-      </el-button>
-      <el-button 
-        type="danger" 
-        size="small" 
-        :class="{ 'is-active': isLiked === false }"
-        @click="showDislikeDialog">
-        {{ isLiked === false ? '已不喜欢' : '不喜欢' }}
-      </el-button>
+
+      <!-- 日期和来源 -->
+      <div class="flex items-center text-xs text-gray-500 space-x-3">
+        <span>{{ formatDate(item.metadata.pub_date) }}</span>
+        <span v-if="item.metadata.source" class="text-blue-500">
+          {{ formatSource(item.metadata.source) }}
+        </span>
+      </div>
+
+      <!-- 内容 -->
+      <div 
+        class="text-gray-600 text-xs line-clamp-2 leading-snug mt-1"
+        v-html="formatContent(item.document)"
+      ></div>
     </div>
 
     <!-- 不喜欢原因对话框 -->
     <el-dialog
       v-model="dislikeDialogVisible"
-      title="请说明不喜欢的原因"
-      width="30%">
-      <el-input
-        v-model="dislikeReason"
-        type="textarea"
-        :rows="4"
-        placeholder="请输入不喜欢的原因"
-      ></el-input>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dislikeDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmDislike">确认</el-button>
-        </span>
-      </template>
+      title="不喜欢的原因"
+      width="30%"
+      class="rounded-lg border border-gray-200"
+    >
+      <div class="border-b border-gray-200 pb-3">
+        <h3 class="text-base font-medium text-gray-800">不喜欢的原因</h3>
+      </div>
+      <div class="py-3">
+        <el-input
+          v-model="dislikeReason"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入不喜欢的原因"
+          class="mb-3 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div class="border-t border-gray-200 pt-3 flex justify-end space-x-2">
+        <el-button 
+          @click="dislikeDialogVisible = false"
+          class="rounded-md bg-white text-gray-700 hover:bg-gray-50 text-sm"
+        >
+          取消
+        </el-button>
+        <el-button 
+          type="primary" 
+          @click="confirmDislike"
+          class="rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
+        >
+          确认
+        </el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
 
-<script>
-import axios from 'axios';
-import { ref, computed } from 'vue';
+<script setup>
+import { ref, computed } from 'vue'
+import { server } from '@/server'
 
-export default {
-  name: 'RssItem',
-  props: {
-    item: {
-      type: Object,
-      required: true
-    }
-  },
-  setup(props) {
-    // 喜好状态
-    const isLiked = computed(() => {
-      if (props.item.metadata.user_preference) {
-        return props.item.metadata.user_preference.is_liked;
-      }
-      return null;
-    });
-
-    // 不喜欢对话框
-    const dislikeDialogVisible = ref(false);
-    const dislikeReason = ref('');
-
-    // 日期格式化
-    const formatDate = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleString('zh-CN');
-    };
-
-    // 内容格式化
-    const formatContent = (content) => {
-      if (!content) return '';
-      // 去除多余换行符，限制内容长度
-      return content.replace(/\n{2,}/g, '<br>').substring(0, 300) + '...';
-    };
-
-    // 切换喜欢状态
-    const toggleLike = async (liked) => {
-      try {
-        await axios.post('/api/rss/preference', {
-          feed_id: props.item.id,
-          is_liked: liked
-        });
-        // 触发刷新
-        window.location.reload();
-      } catch (error) {
-        console.error('保存喜好失败:', error);
-      }
-    };
-
-    // 显示不喜欢对话框
-    const showDislikeDialog = () => {
-      dislikeDialogVisible.value = true;
-      if (props.item.metadata.user_preference && props.item.metadata.user_preference.reason) {
-        dislikeReason.value = props.item.metadata.user_preference.reason;
-      } else {
-        dislikeReason.value = '';
-      }
-    };
-
-    // 确认不喜欢
-    const confirmDislike = async () => {
-      try {
-        await axios.post('/api/rss/preference', {
-          feed_id: props.item.id,
-          is_liked: false,
-          reason: dislikeReason.value
-        });
-        dislikeDialogVisible.value = false;
-        // 触发刷新
-        window.location.reload();
-      } catch (error) {
-        console.error('保存不喜欢原因失败:', error);
-      }
-    };
-
-    return {
-      isLiked,
-      dislikeDialogVisible,
-      dislikeReason,
-      formatDate,
-      formatContent,
-      toggleLike,
-      showDislikeDialog,
-      confirmDislike
-    };
+const props = defineProps({
+  item: {
+    type: Object,
+    required: true
   }
-};
+})
+
+// 喜好状态
+const isLiked = computed(() => {
+  if (props.item.metadata.user_preference) {
+    return props.item.metadata.user_preference.is_liked
+  }
+  return null
+})
+
+// 使用 TanStack Query 更新偏好设置
+const updatePreferenceMutation = server.rss.useUpdateRssPreferenceMutation()
+
+// 不喜欢对话框
+const dislikeDialogVisible = ref(false)
+const dislikeReason = ref('')
+
+// 日期格式化
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-CN')
+}
+
+// 来源格式化
+const formatSource = (source) => {
+  if (!source) return ''
+  // 移除 http:// 或 https:// 前缀，并只显示域名部分
+  return source.replace(/^(https?:\/\/)?(www\.)?/i, '').split('/')[0]
+}
+
+// 内容格式化
+const formatContent = (content) => {
+  if (!content) return ''
+  return content.replace(/\n{2,}/g, '<br>').substring(0, 200) + '...'
+}
+
+// 切换喜欢状态
+const toggleLike = async (liked) => {
+  await updatePreferenceMutation.mutateAsync({
+    feed_id: props.item.id,
+    is_liked: liked
+  })
+}
+
+// 显示不喜欢对话框
+const showDislikeDialog = () => {
+  dislikeDialogVisible.value = true
+  if (props.item.metadata.user_preference && props.item.metadata.user_preference.reason) {
+    dislikeReason.value = props.item.metadata.user_preference.reason
+  } else {
+    dislikeReason.value = ''
+  }
+}
+
+// 确认不喜欢
+const confirmDislike = async () => {
+  await updatePreferenceMutation.mutateAsync({
+    feed_id: props.item.id,
+    is_liked: false,
+    reason: dislikeReason.value
+  })
+  dislikeDialogVisible.value = false
+}
 </script>
 
-<style scoped>
-.rss-item {
-  background-color: white;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  border-left: 4px solid #e6e6e6;
+<style>
+/* 移除所有 :deep 样式，使用 Tailwind 类名替代 */
+.el-dialog {
+  @apply rounded-lg;
 }
 
-.rss-item.liked {
-  border-left-color: #67c23a;
+.el-dialog__header {
+  @apply border-b border-gray-200 pb-3;
 }
 
-.rss-item.disliked {
-  border-left-color: #f56c6c;
+.el-dialog__title {
+  @apply text-base font-medium text-gray-800;
 }
 
-.rss-item-header {
-  margin-bottom: 0.5rem;
+.el-dialog__body {
+  @apply py-3;
 }
 
-.rss-item-title {
-  margin: 0 0 0.5rem 0;
+.el-dialog__footer {
+  @apply border-t border-gray-200 pt-3;
 }
 
-.rss-item-title a {
-  color: #303133;
-  text-decoration: none;
+.el-button {
+  @apply rounded-md text-sm;
 }
 
-.rss-item-title a:hover {
-  color: #409eff;
+.el-button--primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
 }
 
-.rss-item-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: #909399;
+.el-textarea__inner {
+  @apply rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500;
 }
 
-.rss-item-content {
-  margin: 1rem 0;
-  color: #606266;
-  line-height: 1.5;
-}
-
-.rss-item-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.is-active {
-  font-weight: bold;
+/* 移除默认 hover 下划线 */
+a.no-underline:hover {
+  text-decoration: none !important;
 }
 </style> 
