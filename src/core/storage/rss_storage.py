@@ -26,7 +26,26 @@ class RSSStorage:
         """
         存储RSS feed数据
         feed_data: 包含title, link, description, pub_date等信息的字典
+        返回: 新存储项目的ID或None（如果重复）
         """
+        # 检查是否已经存在相同的feed（通过link或title+source判断）
+        existing_feeds = self.collection.get(
+            where={
+                "$or": [
+                    {"link": feed_data['link']}, 
+                    {"$and": [
+                        {"title": feed_data['title']},
+                        {"source": feed_data.get('source', '')}
+                    ]}
+                ]
+            }
+        )
+        
+        # 如果找到匹配的结果，不再添加
+        if existing_feeds and 'ids' in existing_feeds and existing_feeds['ids']:
+            # 已经存在，不添加
+            return None
+        
         # 生成唯一ID
         doc_id = f"feed_{datetime.now().timestamp()}"
         

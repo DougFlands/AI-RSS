@@ -15,23 +15,14 @@
       />
 
       <!-- 使用封装的内容组件 -->
-      <RssContent :feeds="displayedFeeds" :is-loading="rssQuery.isLoading.value" />
+      <RssContent 
+        ref="rssContent"
+        :feeds="displayedFeeds" 
+        :is-loading="rssQuery.isLoading.value"
+        :has-more-items="hasMoreItems"
+        @load-more="loadMore"
+      />
 
-      <!-- 加载更多指示器 -->
-      <div ref="loadMoreTrigger" class="py-4 text-center" v-if="hasMoreItems">
-        <div v-if="rssQuery.isLoading.value" class="flex justify-center">
-          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-        </div>
-        <p v-else class="text-gray-500">下拉加载更多</p>
-      </div>
-
-      <!-- 没有更多数据提示 -->
-      <div
-        v-if="!hasMoreItems && feeds.length > 0"
-        class="py-4 text-center text-gray-500"
-      >
-        没有更多内容了
-      </div>
     </div>
 
     <!-- 使用 Drawer 组件替换原来的右侧边栏 -->
@@ -46,10 +37,8 @@
     >
       <div class="flex flex-col h-full w-full">
         <div class="space-y-4">
-          <h3 class="text-lg font-medium text-gray-800">订阅源设置</h3>
-
           <div class="flex-1 overflow-hidden">
-            <Sidebar @date-selected="handleDateSelected" />
+            <Sidebar />
           </div>
         </div>
       </div>
@@ -66,26 +55,6 @@ import { server } from "@/server";
 import RssHeader from "@/components/RssHeader.vue";
 import RssContent from "@/components/RssContent.vue";
 
-// 数据状态
-const filterType = ref("all");
-const selectedDate = ref("all");
-const keywordFilter = ref("");
-
-// 使用 Drawer 组件的状态
-const drawerVisible = ref(false);
-
-// 无限滚动相关
-const scrollContainer = ref(null);
-const loadMoreTrigger = ref(null);
-
-const currentPage = ref(1);
-const pageSize = ref(20);
-
-// 判断是否还有更多项目可加载
-const hasMoreItems = computed(() => {
-  return filteredFeeds.value.length > displayedFeeds.value.length;
-});
-
 // 使用 TanStack Query 获取日期列表
 const datesQuery = server.rss.useRssDatesQuery();
 
@@ -100,6 +69,28 @@ const sortedDates = computed(() => {
   });
 });
 
+// 获取最新日期
+const latestDate = computed(() => {
+  return sortedDates.value.length > 0 ? sortedDates.value[0].date : 'all';
+});
+
+// 数据状态
+const filterType = ref("all");
+const selectedDate = ref("all"); // 初始化为 all，稍后会更新为最新日期
+const keywordFilter = ref("");
+
+// 使用 Drawer 组件的状态
+const drawerVisible = ref(false);
+
+// 分页相关
+const currentPage = ref(1);
+const pageSize = ref(20); // 每页显示的条目数
+
+// 判断是否还有更多项目可加载
+const hasMoreItems = computed(() => {
+  return filteredFeeds.value.length > displayedFeeds.value.length;
+});
+
 // 切换左侧边栏
 const toggleSidebar = () => {
   drawerVisible.value = !drawerVisible.value;
@@ -109,6 +100,15 @@ const toggleSidebar = () => {
 const rssQuery = server.rss.useRssQuery(
   selectedDate.value === "all" ? undefined : selectedDate.value
 );
+
+// 当日期数据加载完成时，设置默认日期为最新日期
+watch(() => datesQuery.data.value, (newData) => {
+  if (newData && newData.length > 0 && selectedDate.value === 'all') {
+    nextTick(() => {
+      selectedDate.value = latestDate.value;
+    });
+  }
+}, { immediate: true });
 
 // 处理日期选择
 const handleDateSelected = (date) => {
@@ -131,23 +131,42 @@ const handleFilterChange = (type) => {
 const resetPagination = () => {
   currentPage.value = 1;
   nextTick(() => {
-    if (scrollContainer.value) {
-      scrollContainer.value.scrollTop = 0;
+    if (rssContent.value?.scrollContainer) {
+      rssContent.value.scrollContainer.scrollTop = 0;
     }
   });
 };
 
 // 获取原始 feeds 数据
 const feeds = computed(() => {
-  if (!rssQuery.data.value || !rssQuery.data.value.ids || !rssQuery.data.value.ids[0]) {
+  if (!rssQuery.data.value || !rssQuery.data.value.ids) {
     return [];
   }
 
-  return rssQuery.data.value.ids[0].map((id, index) => ({
-    id,
-    document: rssQuery.data.value.documents[0][index],
-    metadata: rssQuery.data.value.metadatas[0][index],
-  }));
+  // 处理多层嵌套的数据结构
+  const result = [];
+  const responseData = rssQuery.data.value;
+
+  // 检查是否有嵌套数组
+  if (responseData.ids && responseData.ids.length > 0) {
+    // 遍历所有来源的数据
+    for (let sourceIndex = 0; sourceIndex < responseData.ids.length; sourceIndex++) {
+      const sourceIds = responseData.ids[sourceIndex];
+      const sourceDocuments = responseData.documents ? responseData.documents[sourceIndex] : [];
+      const sourceMetadatas = responseData.metadatas ? responseData.metadatas[sourceIndex] : [];
+
+      // 遍历当前来源的所有条目
+      for (let itemIndex = 0; itemIndex < sourceIds.length; itemIndex++) {
+        result.push({
+          id: sourceIds[itemIndex],
+          document: sourceDocuments ? sourceDocuments[itemIndex] : null,
+          metadata: sourceMetadatas ? sourceMetadatas[itemIndex] : {},
+        });
+      }
+    }
+  }
+
+  return result;
 });
 
 // 过滤后的数据（未分页）
@@ -178,51 +197,31 @@ const filteredFeeds = computed(() => {
   return result;
 });
 
-// 计算当前页显示的数据
+// 计算当前页显示的数据（前端分页）
 const displayedFeeds = computed(() => {
   // 无限滚动分页：显示从开始到当前页的所有内容
   const end = currentPage.value * pageSize.value;
-  console.log(filteredFeeds.value.slice(0, end));
   return filteredFeeds.value.slice(0, end);
 });
 
-// 使用 Intersection Observer 监听滚动到底部
-let observer = null;
-
-// 加载更多内容
+// 加载更多内容（前端分页）
 const loadMore = () => {
-  if (!hasMoreItems.value) return;
+  if (!hasMoreItems.value || rssQuery.isLoading.value) return;
   
   // 增加页码以显示更多内容
   currentPage.value++;
 };
 
+// 组件引用
+const rssContent = ref(null);
+
 onMounted(() => {
-  // 创建 Intersection Observer
-  observer = new IntersectionObserver(
-    (entries) => {
-      const entry = entries[0];
-      if (entry.isIntersecting) {
-        loadMore();
-      }
-    },
-    {
-      rootMargin: "0px 0px 200px 0px", // 提前200px触发
-      threshold: 0.1,
+  // 设置初始日期为最新的可用日期
+  nextTick(() => {
+    if (sortedDates.value.length > 0) {
+      selectedDate.value = latestDate.value;
     }
-  );
-
-  // 开始观察加载更多触发器元素
-  if (loadMoreTrigger.value) {
-    observer.observe(loadMoreTrigger.value);
-  }
-});
-
-onUnmounted(() => {
-  // 清理 observer
-  if (observer) {
-    observer.disconnect();
-  }
+  });
 });
 </script>
 

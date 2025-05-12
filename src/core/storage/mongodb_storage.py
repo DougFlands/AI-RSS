@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from bson import ObjectId
 from src.core.utils.config import getEnvVariable
+from datetime import datetime
 
 class MongoDBStorage:
     def __init__(self, collection_name="user_preferences"):
@@ -12,6 +13,8 @@ class MongoDBStorage:
         self.client = MongoClient(mongo_uri)
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
+        # RSS源存储集合
+        self.rss_sources = self.db["rss_sources"]
     
     def _convert_objectid(self, data):
         """将MongoDB文档中的ObjectId转换为字符串"""
@@ -63,4 +66,49 @@ class MongoDBStorage:
         获取所有不喜欢的原因
         """
         results = list(self.collection.find({"is_liked": False, "reason": {"$ne": None}}))
-        return self._convert_objectid(results) 
+        return self._convert_objectid(results)
+    
+    # 添加RSS源管理相关方法
+    def add_rss_source(self, url, name=""):
+        """
+        添加新的RSS源
+        url: RSS源URL
+        name: RSS源名称，可选
+        """
+        now = datetime.now()
+        data = {
+            "url": url,
+            "name": name,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        # 检查是否已存在相同URL的源
+        existing = self.rss_sources.find_one({"url": url})
+        if existing:
+            return self._convert_objectid(existing)
+        
+        # 插入新记录
+        result = self.rss_sources.insert_one(data)
+        data["_id"] = result.inserted_id
+        
+        return self._convert_objectid(data)
+    
+    def get_all_rss_sources(self):
+        """
+        获取所有RSS源
+        """
+        results = list(self.rss_sources.find().sort("created_at", -1))
+        return self._convert_objectid(results)
+    
+    def delete_rss_source(self, source_id):
+        """
+        删除RSS源
+        source_id: RSS源ID
+        """
+        try:
+            source_id = ObjectId(source_id)
+            result = self.rss_sources.delete_one({"_id": source_id})
+            return result.deleted_count > 0
+        except:
+            return False 

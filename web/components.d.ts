@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     DateList: typeof import('./src/components/DateList.vue')['default']
+    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
@@ -40,6 +41,7 @@ declare module 'vue' {
     RssHeader: typeof import('./src/components/RssHeader.vue')['default']
     RssItem: typeof import('./src/components/RssItem.vue')['default']
     RssPagination: typeof import('./src/components/RssPagination.vue')['default']
+    RssSourceManager: typeof import('./src/components/RssSourceManager.vue')['default']
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
   }
 }

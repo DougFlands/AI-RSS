@@ -6,35 +6,37 @@
     >
       <el-icon><Menu /></el-icon>
     </el-button>
-    <div class="overflow-x-auto pb-1 flex items-center">
-      <el-select
-        v-model="filterType"
-        @change="onFilterChange"
-        placeholder="筛选条件"
-        class="filter-select"
-      >
-        <el-option label="全部" value="all" />
-        <el-option label="喜欢" value="liked" />
-        <el-option label="不喜欢" value="disliked" />
-        <el-option label="未标记" value="unmarked" />
-      </el-select>
-      <!-- 日期选择器 -->
-      <el-date-picker
-        v-model="selectedDate"
-        type="date"
-        placeholder="选择日期"
-        format="YYYY-MM-DD"
-        value-format="YYYY-MM-DD"
-        :disabled-date="disabledDate"
-        @change="onDateChange"
-        class="w-full"
-      />
+    <div class="flex-1 flex justify-center">
+      <div class="flex items-center gap-4 max-w-md mx-auto">
+        <el-select
+          v-model="filterType"
+          @change="onFilterChange"
+          placeholder="筛选条件"
+          class="filter-select"
+        >
+          <el-option label="全部" value="all" />
+          <el-option label="喜欢" value="liked" />
+          <el-option label="不喜欢" value="disliked" />
+          <el-option label="未标记" value="unmarked" />
+        </el-select>
+        <!-- 日期选择器 -->
+        <el-date-picker
+          v-model="selectedDate"
+          type="date"
+          placeholder="选择日期"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          :disabled-date="disabledDate"
+          @change="onDateChange"
+          class="date-picker"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, defineEmits, defineProps } from 'vue';
+import { ref, computed, defineEmits, defineProps, watch } from 'vue';
 import { Menu } from "@element-plus/icons-vue";
 
 const props = defineProps({
@@ -55,7 +57,12 @@ const props = defineProps({
 const emit = defineEmits(['filter-change', 'date-change', 'toggle-sidebar']);
 
 const filterType = ref(props.initialFilterType);
-const selectedDate = ref(props.initialSelectedDate);
+const selectedDate = ref(props.initialSelectedDate === 'all' ? null : props.initialSelectedDate);
+
+// 监听 initialSelectedDate 变化
+watch(() => props.initialSelectedDate, (newValue) => {
+  selectedDate.value = newValue === 'all' ? null : newValue;
+}, { immediate: true });
 
 // 禁用没有数据的日期
 const disabledDate = (time) => {
@@ -85,6 +92,10 @@ const toggleSidebar = () => {
 /* 下拉选择框样式 */
 .filter-select {
   width: 120px;
+}
+
+.date-picker {
+  width: 160px;
 }
 
 :deep(.el-select__wrapper), :deep(.el-input__wrapper) {

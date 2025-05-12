@@ -16,14 +16,16 @@ def ParseRss(url):
             'summary': entry.summary if 'summary' in entry else ''
         }
         # 存储到 Chroma
-        rss_storage.store_feed({
+        doc_id = rss_storage.store_feed({
             'title': entry_data['title'],
             'link': entry_data['link'],
             'pub_date': entry_data['published'],
             'description': entry_data['summary'],
             'source': url
         })
-        entries.append(entry_data)
+        # 只有当成功存储（非重复）时才添加到返回结果
+        if doc_id:
+            entries.append(entry_data)
     return entries
 
 def OutputRss():
