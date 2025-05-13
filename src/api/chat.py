@@ -12,13 +12,14 @@ def PostChat():
     userInput = data.get('message')
     sessionId = data.get('sessionId')
     modelType = data.get('modelType')
+    systemPrompt = data.get('systemPrompt')
 
     if not sessionId:
         sessionId = str(uuid.uuid4())
 
     aiChat = chatSessions.get(sessionId)
     if not aiChat:
-        aiChat = AIChat(modelType)
+        aiChat = AIChat(modelType, systemPrompt)
         chatSessions[sessionId] = aiChat
 
     try:

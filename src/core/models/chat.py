@@ -1,13 +1,14 @@
 import re
 import time
+from typing import Literal
 
 from src.core.langchain.ollama import ChatManager
 from src.core.utils.config import getEnvVariable
 from cozepy import COZE_CN_BASE_URL
 from cozepy import Coze, TokenAuth, Message, ChatStatus
-
+from openai import OpenAI
 class AIChat:
-    def __init__(self, modelType, system_prompt=""):
+    def __init__(self, modelType: Literal["ollama", "coze", "deepseek"], system_prompt=""):
         self.modelType = modelType
         self.history = []
         self.system_prompt = system_prompt
@@ -20,6 +21,8 @@ class AIChat:
             return self._ollamaGenerate(user_input)
         elif self.modelType == "coze":
             return self._cozeGenerate(user_input)
+        elif self.modelType == "deepseek":
+            return self._deepseekGenerate(user_input)
         else:
             raise ValueError("Invalid model type")
 
@@ -108,6 +111,26 @@ class AIChat:
         }
 
         return answer
+    
+    def _deepseekGenerate(self, user_input):
+        client = OpenAI(api_key=getEnvVariable("DEEPSEEK_KEY"), base_url="https://api.deepseek.com")
+        response = client.chat.completions.create(
+            model="deepseek-reasoner",
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_input},
+            ],
+            stream=False,
+            max_tokens=4096,
+            temperature=0.7
+        )
+        content = response.choices[0].message.content
+        
+        # 使用正则表达式去除开头的 ```json 和结尾的 ```
+        content = re.sub(r'^```json\s*', '', content)  # 移除开头的 ```json
+        content = re.sub(r'```\s*$', '', content)      # 移除结尾的 ```
+            
+        return content
     
     def _generatePrompt(self, user_input):
         context = ["你是一个聊天机器人，正在与一个用户进行对话。"]

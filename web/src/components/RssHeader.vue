@@ -2,13 +2,13 @@
   <div class="bg-[#409EFF] shadow-sm z-10 p-2 py-6 border-b border-gray-200 w-full">
     <div class="flex w-full max-w-full overflow-hidden">
       <el-button
-        class="md:hidden mr-2 border-0 bg-transparent shadow-none flex-shrink-0"
+        class="mr-2 border-0 bg-transparent shadow-none flex-shrink-0"
         @click="toggleSidebar"
       >
         <el-icon><Menu /></el-icon>
       </el-button>
-      <div class="flex-1 flex justify-center overflow-hidden">
-        <div class="flex items-center gap-2 md:gap-4 w-full max-w-md mx-auto">
+      <div class="flex-1 overflow-x-auto scrollbar-hide">
+        <div class="flex items-center gap-2 md:gap-4 min-w-max">
           <el-select
             v-model="filterType"
             @change="onFilterChange"
@@ -47,7 +47,7 @@
             value-format="YYYY-MM-DD"
             :disabled-date="disabledDate"
             @change="onDateChange"
-            class="date-picker"
+            class="!w-[146px] !md:w-[146px] min-w-0 flex-shrink-0"
           />
         </div>
       </div>
@@ -128,7 +128,7 @@ const toggleSidebar = () => {
 
 <style scoped>
 /* 菜单按钮样式 */
-.md\:hidden.mr-2.border-0 .el-icon {
+.mr-2.border-0 .el-icon {
   color: white;
 }
 
@@ -136,13 +136,13 @@ const toggleSidebar = () => {
 .filter-select, .source-select {
   width: 100px;
   min-width: 0;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 
 .date-picker {
   width: 130px;
   min-width: 0;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
@@ -153,6 +153,16 @@ const toggleSidebar = () => {
   .date-picker {
     width: 160px;
   }
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }
 
 :deep(.el-select__wrapper), :deep(.el-input__wrapper) {

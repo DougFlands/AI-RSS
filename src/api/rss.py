@@ -42,6 +42,19 @@ def GetAllRss():
     # 获取RSSStorage实例，确保使用同一实例进行操作
     storage = RSSStorage()
     
+    # 如果请求是推荐模式，使用推荐算法
+    if preference == 'recommended':
+        try:
+            # 导入推荐模块
+            from src.core.models.recommendation import get_rss_recommendations
+            
+            # 使用推荐系统获取排序后的结果
+            feeds = get_rss_recommendations(limit=limit, date=date, source_id=source_id)
+            return feeds
+        except ImportError:
+            # 如果导入失败，继续使用默认排序
+            pass
+    
     # 根据参数获取数据
     if date:
         # 按指定日期筛选
@@ -69,8 +82,6 @@ def GetAllRss():
             items = []
             for i in range(len(feeds['ids'][0])):
                 item = {
-                    'id': feeds['ids'][0][i],
-                    'document': feeds['documents'][0][i] if 'documents' in feeds and feeds['documents'] else None,
                     'metadata': feeds['metadatas'][0][i] if 'metadatas' in feeds and feeds['metadatas'] else {}
                 }
                 items.append(item)
@@ -79,14 +90,14 @@ def GetAllRss():
             def sort_key(item):
                 try:
                     metadata = item['metadata']
-                    if 'pub_date' in metadata:
+                    if 'published' in metadata:
                         try:
-                            return datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                            return datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
                         except ValueError:
                             try:
-                                return datetime.strptime(metadata['pub_date'], '%Y-%m-%d %H:%M:%S')
+                                return datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
                             except ValueError:
-                                return datetime.strptime(metadata['pub_date'], '%Y-%m-%d')
+                                return datetime.strptime(metadata['published'], '%Y-%m-%d')
                 except (ValueError, TypeError):
                     pass
                 return datetime(1970, 1, 1)  # 默认日期为早期时间
@@ -106,8 +117,6 @@ def GetAllRss():
                         filtered_items.append(item)
                     elif preference == 'unmarked' and not pref:
                         filtered_items.append(item)
-                    elif preference == 'recommended':
-                        filtered_items.append(item)
                     elif preference == 'all':
                         filtered_items.append(item)
                 
@@ -119,8 +128,6 @@ def GetAllRss():
             
             # 重构结果
             feeds = {
-                'ids': [[item['id'] for item in items]],
-                'documents': [[item['document'] for item in items]] if 'documents' in feeds else None,
                 'metadatas': [[item['metadata'] for item in items]] if 'metadatas' in feeds else None
             }
     

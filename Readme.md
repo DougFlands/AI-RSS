@@ -94,4 +94,7 @@ pytest tests/test_models/test_rss.py
 pytest --cov-report html
 
 # TODO:
-* 联网搜索
+* PWA
+* sentry
+* 当日排序
+* 定时 & 手动更新

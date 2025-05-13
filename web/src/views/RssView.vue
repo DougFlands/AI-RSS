@@ -183,7 +183,7 @@ const feeds = computed(() => {
       for (let itemIndex = 0; itemIndex < sourceIds.length; itemIndex++) {
         result.push({
           id: sourceIds[itemIndex],
-          document: sourceDocuments ? sourceDocuments[itemIndex] : null,
+          summary: sourceDocuments ? sourceDocuments[itemIndex] : null,
           metadata: sourceMetadatas ? sourceMetadatas[itemIndex] : {},
         });
       }
@@ -225,7 +225,7 @@ const filteredFeeds = computed(() => {
     result = result.filter((feed) => {
       return (
         (feed.metadata.title && feed.metadata.title.toLowerCase().includes(keyword)) ||
-        (feed.document && feed.document.toLowerCase().includes(keyword))
+        (feed.summary && feed.summary.toLowerCase().includes(keyword))
       );
     });
   }

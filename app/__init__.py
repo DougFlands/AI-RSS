@@ -7,9 +7,7 @@ from app.extensions import mail
 from src.core.utils.config import getEnvVariable
 
 def create_app():
-    app = Flask(__name__, 
-                # static_folder='../vue_app/dist', static_url_path='/'
-                )
+    app = Flask(__name__,  static_folder='../vue_app/dist', static_url_path='/')
     
     # 启用CORS
     CORS(app)
@@ -29,9 +27,13 @@ def create_app():
     from src.api.trigger import trigger_bp
     app.register_blueprint(trigger_bp)
     
-    # @app.route('/')
-    # def index():
-    #     return app.send_static_file('index.html')
+    # 注册推荐系统蓝图
+    from src.api.recommendation import recommendation_bp
+    app.register_blueprint(recommendation_bp)
+    
+    @app.route('/')
+    def index():
+        return app.send_static_file('index.html')
 
     return app
 
@@ -42,6 +44,8 @@ def call_api_on_start():
         requests.post(url, json={"recipients":[getEnvVariable("MAIL_RECIPIENTS")], "subject":"项目的测试邮件", "body":"<h1>测试邮件</h1>"})
 
 def call_api_timed():
+    if getEnvVariable("TIMED_SEND_MAIL") == "False": 
+        return
     print("定时任务启动")
     while True:
         now = datetime.now()

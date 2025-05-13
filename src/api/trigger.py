@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from src.core.utils.config import RSS_SYSTEM_PROMPT
 from src.core.models.chat import AIChat
 from src.core.models.email import SendEmail
 from src.core.models.rss import OutputRss
@@ -12,11 +13,10 @@ def GetTrigger():
     outputRss = OutputRss()
     
     body = ""
-    system_prompt="这是一段 RSS 信息，请将里面的信息过滤，按照你认为的重要程度排序并分类。最后输出一个 Email 的 HTML 正文。注意：邮件的正文需要包含标题和内容，标题需要包含日期，内容需要包含标题和链接，只输出 带HTML标签 的正文即可。不要输出 markdown "
     
     for value in outputRss.values():
         modelType = data.get('modelType')
-        aiChat = AIChat(modelType, system_prompt=system_prompt)
+        aiChat = AIChat(modelType, system_prompt=RSS_SYSTEM_PROMPT)
         s = str(value)
         aiResponse = aiChat.getResponse(s)
         

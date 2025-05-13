@@ -98,19 +98,15 @@
         </div>
       </div>
 
-      <!-- 日期和来源 -->
+      <!-- 日期 -->
       <div class="flex items-center text-xs text-gray-500 space-x-3">
-        <span>{{ formatDate(item.metadata.pub_date) }}</span>
-        <span v-if="item.metadata.source" class="text-blue-500">
-          {{ formatSource(item.metadata.source) }}
-        </span>
+        <span>{{ formatDate(item.metadata.published) }}</span>
       </div>
 
       <!-- 内容 -->
-      <div
-        class="text-gray-600 text-xs line-clamp-2 leading-snug mt-1"
-        v-html="formatContent(item.document)"
-      ></div>
+      <p class="text-gray-600 text-xs line-clamp-2 leading-snug mt-1">
+        {{ item.metadata.summary }}
+      </p>
     </div>
 
     <!-- 不喜欢原因对话框 -->

@@ -56,7 +56,7 @@ const props = defineProps({
     default: false,
   }
 });
-
+console.log(props.feeds);
 // 创建 Intersection Observer 监听滚动到底部
 let observer = null;
 

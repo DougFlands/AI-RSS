@@ -22,12 +22,7 @@ class RSSStorage:
         # 初始化MongoDB存储
         self.mongo_storage = MongoDBStorage()
     
-    def store_feed(self, feed_data):
-        """
-        存储RSS feed数据
-        feed_data: 包含title, link, description, pub_date等信息的字典
-        返回: 新存储项目的ID或None（如果重复）
-        """
+    def check_has_feed(self, feed_data):
         # 检查是否已经存在相同的feed（通过link或title+source判断）
         existing_feeds = self.collection.get(
             where={
@@ -40,22 +35,32 @@ class RSSStorage:
                 ]
             }
         )
-        
         # 如果找到匹配的结果，不再添加
         if existing_feeds and 'ids' in existing_feeds and existing_feeds['ids']:
             # 已经存在，不添加
+            return True
+        return False
+        
+    def store_feed(self, feed_data):
+        """
+        存储RSS feed数据
+        feed_data: 包含title, link,  published 等信息的字典
+        返回: 新存储项目的ID或None（如果重复）
+        """
+        if self.check_has_feed(feed_data):
             return None
         
         # 生成唯一ID
         doc_id = f"feed_{datetime.now().timestamp()}"
         
         # 准备存储数据
-        documents = [f"{feed_data['title']}\n{feed_data['description']}"]
+        documents = [f"{feed_data['title']}"]
         metadatas = [{
             "title": feed_data['title'],
             "link": feed_data['link'],
-            "pub_date": feed_data['pub_date'],
-            "source": feed_data.get('source', '')
+            "published": feed_data['published'],
+            "source": feed_data.get('source'),
+            "summary": feed_data.get('summary')
         }]
         
         # 存储到Chroma
@@ -72,11 +77,88 @@ class RSSStorage:
         query: 搜索关键词
         n_results: 返回结果数量
         """
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results
-        )
-        return self._rank_results_by_preference(results)
+        try:
+            # 先使用普通搜索获取与查询相关的结果
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=n_results * 2  # 获取更多结果，以便后续按喜好排序
+            )
+            
+            # 尝试导入推荐模型
+            try:
+                from src.core.models.recommendation import recommender
+                
+                # 如果成功导入，使用推荐系统对结果进行排序
+                if recommender and hasattr(recommender, '_compute_preference_score'):
+                    # 获取所有用户喜好
+                    preferences = {pref["feed_id"]: pref for pref in self.mongo_storage.get_all_preferences()}
+                    
+                    # 处理结果
+                    if 'ids' in results and results['ids'] and len(results['ids'][0]) > 0:
+                        items = []
+                        embedding_function = recommender.embedding_function
+                        
+                        for i, doc_id in enumerate(results['ids'][0]):
+                            # 获取当前文档
+                            document = results['documents'][0][i] if 'documents' in results and results['documents'] else ""
+                            metadata = results['metadatas'][0][i] if 'metadatas' in results and results['metadatas'] else {}
+                            distance = results['distances'][0][i] if 'distances' in results and results['distances'] else None
+                            
+                            # 如果已经有用户对该feed的明确喜好，直接使用
+                            explicit_preference = preferences.get(doc_id)
+                            if explicit_preference:
+                                preference_score = 0 if explicit_preference.get('is_liked') else 1
+                            else:
+                                # 计算文档的嵌入向量
+                                if document and embedding_function:
+                                    embedding = embedding_function([document])[0]
+                                    # 计算用户喜好分数
+                                    preference_score = recommender._compute_preference_score(embedding)
+                                else:
+                                    preference_score = 0.5  # 如果没有文档内容或embedding函数，使用中性分数
+                            
+                            # 记录分数和元数据
+                            metadata['preference_score'] = preference_score
+                            metadata['preference_order'] = int(preference_score * 100)  # 转换为0-100的整数分数
+                            metadata['relevance_score'] = 1 - (distance if distance is not None else 0)  # 相关性分数
+                            
+                            # 综合分数: 结合相关性与喜好分数 (70% 相关性 + 30% 喜好)
+                            combined_score = 0.7 * metadata['relevance_score'] - 0.3 * preference_score
+                            
+                            # 添加到结果列表
+                            items.append({
+                                'id': doc_id,
+                                'document': document,
+                                'metadata': metadata,
+                                'distance': distance,
+                                'combined_score': combined_score  # 用于排序
+                            })
+                        
+                        # 按综合分数排序（分数越高越好）
+                        items.sort(key=lambda x: x['combined_score'], reverse=True)
+                        
+                        # 限制结果数量
+                        items = items[:n_results]
+                        
+                        # 重构结果
+                        sorted_results = {
+                            'ids': [[item['id'] for item in items]],
+                            'documents': [[item['document'] for item in items]],
+                            'metadatas': [[item['metadata'] for item in items]],
+                            'distances': [[item['distance'] for item in items]] if 'distances' in results else None
+                        }
+                        
+                        return sorted_results
+            except ImportError:
+                # 如果导入失败，使用默认排序方法
+                pass
+            
+            # 如果上面的代码没有成功返回，则使用原来的排序方法
+            return self._rank_results_by_preference(results)
+        except Exception as e:
+            # 如果搜索出错，记录错误并返回空结果
+            print(f"搜索出错: {e}")
+            return {'ids': [[]], 'documents': [[]], 'metadatas': [[]]}
     
     def get_all_feeds(self, limit=20, date=None):
         """
@@ -98,18 +180,18 @@ class RSSStorage:
             filtered_metadatas = []
             
             for i, metadata in enumerate(results.get('metadatas', [])):
-                if 'pub_date' in metadata:
+                if 'published' in metadata:
                     try:
                         # 尝试多种日期格式
                         try:
-                            pub_date = datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                            published = datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
                         except ValueError:
                             try:
-                                pub_date = datetime.strptime(metadata['pub_date'], '%Y-%m-%d %H:%M:%S')
+                                published = datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
                             except ValueError:
-                                pub_date = datetime.strptime(metadata['pub_date'], '%Y-%m-%d')
+                                published = datetime.strptime(metadata['published'], '%Y-%m-%d')
                         
-                        if pub_date.strftime('%Y-%m-%d') == date:
+                        if published.strftime('%Y-%m-%d') == date:
                             filtered_ids.append(results['ids'][i])
                             filtered_documents.append(results['documents'][i])
                             filtered_metadatas.append(metadata)
@@ -149,14 +231,14 @@ class RSSStorage:
                     def sort_key(item):
                         try:
                             metadata = item['metadata']
-                            if 'pub_date' in metadata:
+                            if 'published' in metadata:
                                 try:
-                                    return datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
+                                    return datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
                                 except ValueError:
                                     try:
-                                        return datetime.strptime(metadata['pub_date'], '%Y-%m-%d %H:%M:%S')
+                                        return datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
                                     except ValueError:
-                                        return datetime.strptime(metadata['pub_date'], '%Y-%m-%d')
+                                        return datetime.strptime(metadata['published'], '%Y-%m-%d')
                         except (ValueError, TypeError):
                             pass
                         return datetime(1970, 1, 1)  # 默认日期为早期时间
@@ -251,11 +333,11 @@ class RSSStorage:
         # 统计每个日期的数据量
         date_counts = {}
         for metadata in results.get('metadatas', []):
-            if 'pub_date' in metadata:
+            if 'published' in metadata:
                 try:
                     # 解析日期
-                    pub_date = datetime.strptime(metadata['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
-                    date_str = pub_date.strftime('%Y-%m-%d')
+                    published = datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
+                    date_str = published.strftime('%Y-%m-%d')
                     
                     # 更新计数
                     date_counts[date_str] = date_counts.get(date_str, 0) + 1
