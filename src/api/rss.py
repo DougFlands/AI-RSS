@@ -263,3 +263,8 @@ def UpdateSource(source_id):
             return jsonify({'error': 'RSS source not found'}), 404
     except Exception as e:
         return jsonify({'error': f'Failed to update RSS source: {str(e)}'}), 500
+
+@rss_bp.route('/error', methods=['GET'])
+def TestError(source_id):
+    1/0
+    return 'error', 500

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[calc(100vh-20px)] flex flex-col relative">
+  <div class="h-[calc(100vh-60px)] flex flex-col relative">
     <div class="p-3 border-b flex justify-between items-center">
       <h2 class="text-base font-semibold">订阅源</h2>
       <el-button type="primary" size="small" @click="openAddSourceDialog" class="add-button">+</el-button>
@@ -23,7 +23,7 @@
     </div>
     
     <!-- 底部刷新按钮 - 放在最底部固定位置 -->
-    <div class="mt-auto p-3 border-t flex justify-end absolute bottom-0 left-0 right-0">
+    <div class="mt-auto border-t flex justify-end absolute bottom-0 left-0 right-0">
       <el-button 
         type="primary" 
         size="small" 
@@ -32,7 +32,8 @@
         :disabled="refreshing"
         class="refresh-button"
       >
-        <el-icon class="mr-1"><Refresh /></el-icon>
+
+        <el-icon class="mr-1" v-if="!refreshing"><Refresh /></el-icon>
         刷新
       </el-button>
     </div>

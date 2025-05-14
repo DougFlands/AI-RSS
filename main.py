@@ -1,6 +1,14 @@
 import threading
 from app import call_api_on_start, call_api_timed, create_app
 from src.core.utils.config import getEnvVariable
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://9928242499a30e180c3e343cd5c16718@o4509322316414981.ingest.us.sentry.io/4509322318184448",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)
 
 app = create_app()
 

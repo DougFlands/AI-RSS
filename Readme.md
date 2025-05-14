@@ -95,5 +95,4 @@ pytest --cov-report html
 
 # TODO:
 * PWA
-* sentry
 * docker
