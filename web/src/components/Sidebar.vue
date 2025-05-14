@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="h-[calc(100vh-20px)] flex flex-col relative">
     <div class="p-3 border-b flex justify-between items-center">
       <h2 class="text-base font-semibold">订阅源</h2>
       <el-button type="primary" size="small" @click="openAddSourceDialog" class="add-button">+</el-button>
@@ -20,6 +20,21 @@
           </span>
         </div>
       </div>
+    </div>
+    
+    <!-- 底部刷新按钮 - 放在最底部固定位置 -->
+    <div class="mt-auto p-3 border-t flex justify-end absolute bottom-0 left-0 right-0">
+      <el-button 
+        type="primary" 
+        size="small" 
+        @click="refreshRssData" 
+        :loading="refreshing"
+        :disabled="refreshing"
+        class="refresh-button"
+      >
+        <el-icon class="mr-1"><Refresh /></el-icon>
+        刷新
+      </el-button>
     </div>
     
     <!-- 添加订阅源弹窗 -->
@@ -67,7 +82,9 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { api } from "@/api";
+import { server } from "@/server";
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Refresh } from '@element-plus/icons-vue';
 
 // 订阅源列表
 const sources = ref([]);
@@ -81,6 +98,12 @@ const errorMessage = ref('');
 const isEditing = ref(false);
 const editingSourceId = ref(null);
 
+// 刷新状态
+const refreshing = ref(false);
+
+// 使用 vue-query 的 useNewRssQuery
+const newRssQuery = server.rss.useNewRssQuery();
+
 // 获取所有订阅源
 const fetchSources = async () => {
   try {
@@ -91,6 +114,29 @@ const fetchSources = async () => {
     ElMessage.error('获取订阅源失败');
   } finally {
     loading.value = false;
+  }
+};
+
+// 刷新 RSS 数据
+const refreshRssData = async () => {
+  try {
+    refreshing.value = true;
+    
+    // 使用 vue-query 的 refetch 方法，它会自动使相关查询失效
+    const result = await newRssQuery.refetch();
+    
+    if (result.isSuccess) {
+      // 刷新成功后重新获取订阅源列表
+      await fetchSources();
+      ElMessage.success('RSS 数据刷新成功');
+    } else {
+      throw new Error('刷新 RSS 数据失败');
+    }
+  } catch (error) {
+    console.error('Failed to refresh RSS data:', error);
+    ElMessage.error('RSS 数据刷新失败');
+  } finally {
+    refreshing.value = false;
   }
 };
 
@@ -200,6 +246,14 @@ onMounted(() => {
   width: 28px;
   height: 28px;
   padding: 0;
+}
+
+/* 刷新按钮样式 */
+.refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
 }
 
 /* 订阅源列表样式 */

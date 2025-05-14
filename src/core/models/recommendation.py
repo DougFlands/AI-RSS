@@ -180,7 +180,7 @@ class RSSRecommender:
         Args:
             limit: 返回结果数量
             date: 可选，按日期过滤，格式为YYYY-MM-DD
-            source_id: 可选，按订阅源ID过滤
+            source_id: 可选，按订阅源URL筛选 (注意：虽然参数名是source_id，但实际值是source_url)
             
         Returns:
             推荐的RSS feed列表，按喜好分数排序（分数越小越符合用户喜好）
@@ -222,7 +222,7 @@ class RSSRecommender:
                 else:
                     preference_score = 0.5  # 如果没有文档内容，使用中性分数
             
-            # 添加源ID过滤
+            # 添加源URL过滤 (注意source_id参数实际包含的是URL)
             if source_id and metadata.get('source') != source_id:
                 continue
             

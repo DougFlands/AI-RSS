@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from src.core.models.rss import OutputRss, search_rss_feeds, get_all_rss_feeds, ParseRss
 from src.core.storage.rss_storage import RSSStorage
 from datetime import datetime
+from bson.objectid import ObjectId
 
 rss_bp = Blueprint("rss", __name__, url_prefix="/rss")
 rss_storage = RSSStorage()
@@ -39,9 +40,24 @@ def GetAllRss():
         except ValueError:
             return jsonify({'error': 'Invalid date format. Please use YYYY-MM-DD'}), 400
     
+    # 如果提供了source_id，先获取对应的URL
+    source_url = None
     # 获取RSSStorage实例，确保使用同一实例进行操作
     storage = RSSStorage()
     
+    if source_id:
+        try:
+            # 获取RSS源信息
+            source = storage.mongo_storage.rss_sources.find_one({"_id": ObjectId(source_id)})
+            if source:
+                source_url = source.get("url")
+            else:
+                # 如果找不到对应的source_id，返回空结果
+                return jsonify({'ids': [[]], 'documents': [[]], 'metadatas': [[]]}), 200
+        except Exception as e:
+            # 如果ID格式不正确或其他错误，返回错误信息
+            return jsonify({'error': f'Invalid source_id: {str(e)}'}), 400
+    print(source_url)
     # 如果请求是推荐模式，使用推荐算法
     if preference == 'recommended':
         try:
@@ -49,7 +65,7 @@ def GetAllRss():
             from src.core.models.recommendation import get_rss_recommendations
             
             # 使用推荐系统获取排序后的结果
-            feeds = get_rss_recommendations(limit=limit, date=date, source_id=source_id)
+            feeds = get_rss_recommendations(limit=limit, date=date, source_id=source_url)
             return feeds
         except ImportError:
             # 如果导入失败，继续使用默认排序
@@ -104,7 +120,6 @@ def GetAllRss():
             
             # 从新到旧排序 (降序)
             items.sort(key=sort_key, reverse=True)
-            
             # 根据喜好状态筛选
             if preference:
                 filtered_items = []
@@ -121,13 +136,15 @@ def GetAllRss():
                         filtered_items.append(item)
                 
                 items = filtered_items
-            
+
             # 根据订阅源筛选
-            if source_id:
-                items = [item for item in items if item['metadata'].get('source_id') == source_id]
+            if source_url:
+                items = [item for item in items if item['metadata'].get('source') == source_url]
             
             # 重构结果
             feeds = {
+                'ids': [feeds['ids'][0]] if 'ids' in feeds else [[]],
+                'documents': [feeds['documents'][0]] if 'documents' in feeds else [[]],
                 'metadatas': [[item['metadata'] for item in items]] if 'metadatas' in feeds else None
             }
     

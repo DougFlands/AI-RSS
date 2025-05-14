@@ -45,9 +45,9 @@
             placeholder="选择日期"
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
-            :disabled-date="disabledDate"
             @change="onDateChange"
             class="!w-[146px] !md:w-[146px] min-w-0 flex-shrink-0"
+            :disabled-date="disableFutureDates"
           />
         </div>
       </div>
@@ -90,24 +90,17 @@ const props = defineProps({
 const emit = defineEmits(['filter-change', 'date-change', 'source-change', 'toggle-sidebar']);
 
 const filterType = ref(props.initialFilterType);
-const selectedDate = ref(props.initialSelectedDate === 'all' ? null : props.initialSelectedDate);
+const selectedDate = ref(props.initialSelectedDate);
 const sourceId = ref(props.initialSourceId);
-
 // 监听 initialSelectedDate 变化
 watch(() => props.initialSelectedDate, (newValue) => {
-  selectedDate.value = newValue === 'all' ? null : newValue;
+  selectedDate.value = newValue;
 }, { immediate: true });
 
 // 监听 initialSourceId 变化
 watch(() => props.initialSourceId, (newValue) => {
   sourceId.value = newValue;
 }, { immediate: true });
-
-// 禁用没有数据的日期
-const disabledDate = (time) => {
-  const dateString = time.toISOString().split("T")[0];
-  return !props.availableDates.has(dateString);
-};
 
 const onFilterChange = () => {
   emit('filter-change', filterType.value);
@@ -123,6 +116,23 @@ const onSourceChange = () => {
 
 const toggleSidebar = () => {
   emit('toggle-sidebar');
+};
+
+const disableFutureDates = (date) => {
+  // 获取当前日期的ISO字符串并截取日期部分，格式为YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
+  
+  // 格式化传入的日期为YYYY-MM-DD格式，以便与availableDates中的日期进行比较
+  const formattedDate = date.toISOString().split('T')[0];
+  
+  // 检查日期是否在未来（禁用未来日期）
+  const isFutureDate = formattedDate > today;
+  
+  // 检查日期是否在可用日期列表中（如果不在则禁用）
+  const isDateAvailable = props.availableDates.has(formattedDate);
+  
+  // 如果日期是未来日期或日期不在可用列表中，则禁用此日期
+  return isFutureDate || !isDateAvailable;
 };
 </script>
 

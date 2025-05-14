@@ -96,5 +96,4 @@ pytest --cov-report html
 # TODO:
 * PWA
 * sentry
-* 当日排序
-* 定时 & 手动更新
+* docker

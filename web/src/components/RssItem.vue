@@ -1,12 +1,14 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition-shadow">
+  <a
+    :href="item.metadata.link"
+    target="_blank"
+    class="no-underline bg-white block rounded-lg shadow-sm p-3 hover:shadow-md transition-shadow"
+  >
     <div class="flex flex-col space-y-1.5">
       <!-- 标题和链接 -->
       <div class="flex items-start justify-between">
         <h3 class="text-base font-medium text-gray-800 hover:text-blue-600 line-clamp-2">
-          <a :href="item.metadata.link" target="_blank" class="no-underline">
-            {{ item.metadata.title }}
-          </a>
+          {{ item.metadata.title }}
         </h3>
         <div class="flex items-center space-x-1 ml-2">
           <!-- 喜欢按钮 -->
@@ -149,7 +151,7 @@
         </el-button>
       </div>
     </el-dialog>
-  </div>
+  </a>
 </template>
 
 <script setup>

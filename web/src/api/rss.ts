@@ -5,6 +5,13 @@ import axios from 'axios'
  */
 
 // 获取所有 RSS 数据
+export const getNewRss = async () => {
+  const response = await axios.get('/api/rss')
+  return response.data
+}
+
+
+// 获取所有 RSS 数据
 export const getAllRss = async (params?: { date?: string }) => {
   // 设置大限制值以获取所有数据
   const requestParams = { 

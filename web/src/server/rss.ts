@@ -12,6 +12,7 @@ export const RSS_QUERIES = {
   dates: 'rss-dates',
   search: 'rss-search',
   sources: 'rss-sources',
+  new: 'rss-new',
 }
 
 // 获取所有 RSS
@@ -22,15 +23,47 @@ export interface RssQueryParams {
 }
 
 // 获取所有 RSS
-export const useRssQuery = (params?: RssQueryParams) => {
+export const useRssQuery = (params: RssQueryParams) => {
   return useQuery({
-    queryKey: [RSS_QUERIES.all, params],
+    queryKey: [params.date, params.preference, params.source_id],
     queryFn: () => api.rss.getAllRss(params),
     // 禁用不必要的选项
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   })
+}
+
+// 获取最新 RSS 数据
+export const useNewRssQuery = () => {
+  const queryClient = useQueryClient()
+  
+  const query = useQuery({
+    queryKey: [RSS_QUERIES.new],
+    queryFn: () => api.rss.getNewRss(),
+    // 禁用自动刷新
+    enabled: false,
+  })
+  
+  // 重写 refetch 方法，在成功后使相关查询失效
+  const refetchAndInvalidate = async () => {
+    const result = await query.refetch()
+    
+    // 请求成功后，使相关查询失效
+    if (result.isSuccess) {
+      // 刷新所有 RSS 相关数据
+      queryClient.invalidateQueries({ queryKey: [RSS_QUERIES.all] })
+      queryClient.invalidateQueries({ queryKey: [RSS_QUERIES.dates] })
+      queryClient.invalidateQueries({ queryKey: [RSS_QUERIES.sources] })
+    }
+    
+    return result
+  }
+  
+  return {
+    ...query,
+    refetch: refetchAndInvalidate
+  }
 }
 
 // 获取日期列表

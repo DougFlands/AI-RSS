@@ -5,7 +5,7 @@
     </div>
 
     <div class="flex-1 p-4 md:p-6 overflow-y-auto" ref="scrollContainer" @scroll="handleScroll">
-      <div v-if="isLoading && feeds.length === 0" class="space-y-4">
+      <div v-if="isLoading" class="space-y-4">
         <el-skeleton :rows="5" animated />
       </div>
 
@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, defineExpose, ref, onMounted, onUnmounted, watch } from "vue";
+import { defineProps, defineEmits, defineExpose, ref, onMounted, onUnmounted, watch, watchEffect } from "vue";
 import RssItem from "@/components/RssItem.vue";
 import Sidebar from "@/components/Sidebar.vue";
 
@@ -56,7 +56,11 @@ const props = defineProps({
     default: false,
   }
 });
-console.log(props.feeds);
+
+watchEffect(() => {
+  console.log(props.isLoading);
+}, { immediate: true });
+
 // 创建 Intersection Observer 监听滚动到底部
 let observer = null;
 

@@ -11,7 +11,7 @@
         :initial-selected-date="selectedDate"
         :initial-source-id="selectedSourceId"
         :sources="sourcesData"
-        :is-sources-loading="sourcesQuery.isLoading.value"
+        :is-sources-loading="sourcesQuery.isFetching.value"
         @filter-change="handleFilterChange"
         @date-change="handleDateSelected"
         @source-change="handleSourceChange"
@@ -22,7 +22,7 @@
       <RssContent
         ref="rssContent"
         :feeds="displayedFeeds"
-        :is-loading="rssQuery.isLoading.value"
+        :is-loading="rssQuery.isFetching.value"
         :has-more-items="hasMoreItems"
         @load-more="loadMore"
       />
@@ -50,7 +50,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  nextTick,
+  reactive,
+  watchEffect,
+} from "vue";
 import Sidebar from "@/components/Sidebar.vue";
 import { server } from "@/server";
 
@@ -83,7 +92,7 @@ const latestDate = computed(() => {
 
 // 数据状态
 const filterType = ref("recommended");
-const selectedDate = ref("all"); // 初始化为 all，稍后会更新为最新日期
+const selectedDate = ref(new Date().toISOString().split("T")[0]); // 初始化为当天日期，格式为 YYYY-MM-DD
 const keywordFilter = ref("");
 const selectedSourceId = ref(""); // 添加源筛选状态
 
@@ -104,25 +113,22 @@ const toggleSidebar = () => {
   drawerVisible.value = !drawerVisible.value;
 };
 
-// 使用 TanStack Query 获取 RSS 数据
-const rssQuery = server.rss.useRssQuery({
-  date: selectedDate.value === "all" ? undefined : selectedDate.value,
-  preference: filterType.value === "all" ? undefined : filterType.value,
+// 创建响应式的查询参数
+const queryParams = reactive({
+  date: selectedDate.value,
+  preference: filterType.value,
   source_id: selectedSourceId.value || undefined,
 });
 
-// 当日期数据加载完成时，设置默认日期为最新日期
-watch(
-  () => datesQuery.data.value,
-  (newData) => {
-    if (newData && newData.length > 0 && selectedDate.value === "all") {
-      nextTick(() => {
-        selectedDate.value = latestDate.value;
-      });
-    }
-  },
-  { immediate: true }
-);
+// 监视参数变化并更新 queryParams
+watchEffect(() => {
+  queryParams.date = selectedDate.value;
+  queryParams.preference = filterType.value;
+  queryParams.source_id = selectedSourceId.value || undefined;
+});
+
+// 使用 server 层的 useRssQuery，传入响应式依赖参数
+const rssQuery = server.rss.useRssQuery(queryParams);
 
 // 处理日期选择
 const handleDateSelected = (date) => {
@@ -147,10 +153,22 @@ const handleSourceChange = (sourceId) => {
   resetPagination();
 };
 
-// 重置分页状态
+// 重置分页状态并重新获取数据
 const resetPagination = () => {
+  // 重置分页状态
   currentPage.value = 1;
+  
+  // 手动触发数据刷新
   nextTick(() => {
+    // 更新 queryParams 以确保数据刷新
+    queryParams.date = selectedDate.value;
+    queryParams.preference = filterType.value;
+    queryParams.source_id = selectedSourceId.value || undefined;
+    
+    // 手动触发刷新
+    rssQuery.refetch();
+    
+    // 滚动到顶部
     if (rssContent.value?.scrollContainer) {
       rssContent.value.scrollContainer.scrollTop = 0;
     }
@@ -251,10 +269,13 @@ const loadMore = () => {
 const rssContent = ref(null);
 
 onMounted(() => {
-  // 设置初始日期为最新的可用日期
+  // 设置初始日期为最新的可用日期，仅当当前设置的日期不在可用日期列表中时
   nextTick(() => {
     if (sortedDates.value.length > 0) {
-      selectedDate.value = latestDate.value;
+      const availableDatesSet = new Set(sortedDates.value.map((d) => d.date));
+      if (!availableDatesSet.has(selectedDate.value)) {
+        selectedDate.value = latestDate.value;
+      }
     }
   });
 });
