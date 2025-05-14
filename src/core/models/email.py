@@ -1,12 +1,12 @@
 from flask_mail import Message
 from app.extensions import mail
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 
-def SendEmail(subject, recipients,  html):
+def send_email(subject, recipients,  html):
     msg = Message(
         subject=subject,
         recipients=recipients,
-        sender=getEnvVariable("MAIL_USERNAME"),
+        sender=get_env_variable("MAIL_USERNAME"),
         html=html
     )
     try:

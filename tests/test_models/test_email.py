@@ -5,7 +5,7 @@ from src.core.models.email import SendEmail
 
 class TestEmail(unittest.TestCase):
     @patch('app.extensions.mail.send')
-    @patch('src.core.utils.config.getEnvVariable')
+    @patch('src.core.utils.config.get_env_variable')
     def test_send_email_success(self, mock_get_env, mock_send):
         # 设置模拟数据
         mock_get_env.return_value = 'test@example.com'

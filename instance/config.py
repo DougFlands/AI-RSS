@@ -1,9 +1,9 @@
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 
-MAIL_SERVER = getEnvVariable("MAIL_SERVER")  
-MAIL_PORT = getEnvVariable("MAIL_PORT")  
+MAIL_SERVER = get_env_variable("MAIL_SERVER")  
+MAIL_PORT = get_env_variable("MAIL_PORT")  
 MAIL_USE_TLS = True  
 MAIL_USE_SSL = False 
-MAIL_USERNAME = getEnvVariable("MAIL_USERNAME")  
-MAIL_PASSWORD = getEnvVariable("MAIL_PASSWORD") 
+MAIL_USERNAME = get_env_variable("MAIL_USERNAME")  
+MAIL_PASSWORD = get_env_variable("MAIL_PASSWORD") 
 # MAIL_DEFAULT_SENDER = 'your_email@example.com' 

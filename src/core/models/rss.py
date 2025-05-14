@@ -10,7 +10,7 @@ rss_storage = RSSStorage()
 url = "http://localhost:5000/chat" 
 aiChat = AIChat(modelType="deepseek", system_prompt=RSS_SYSTEM_PROMPT)
 
-def ParseRss(url):
+def parse_rss(url):
     feed = feedparser.parse(url)
     entries = []
     for entry in feed.entries:
@@ -29,7 +29,7 @@ def ParseRss(url):
     if not entries:
         return []
     
-    aiResponse = aiChat.getResponse(json.dumps(entries))
+    aiResponse = aiChat.get_response(json.dumps(entries))
     
     processed_entries = []
     try:
@@ -61,7 +61,7 @@ def ParseRss(url):
     
     return processed_entries
 
-def OutputRss():
+def output_rss():
     """
     根据已存储的RSS URL获取数据并存储
     返回: 包含每个URL获取到的数据的字典
@@ -71,7 +71,7 @@ def OutputRss():
     for rss_source in rss_urls:
         url = rss_source["url"]
         try:
-            feed_entries = ParseRss(url)
+            feed_entries = parse_rss(url)
             entries[url] = feed_entries
         except Exception as e:
             print(f"获取RSS数据时出错: {e}")

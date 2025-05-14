@@ -1,6 +1,6 @@
 import threading
 from app import call_api_on_start, call_api_timed, create_app
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 import sentry_sdk
 
 sentry_sdk.init(
@@ -25,5 +25,5 @@ if __name__ == "__main__":
     thread1.start()
     thread2.start()
     
-    app.run(host='0.0.0.0',debug=bool(getEnvVariable("DEBUG_MODE")))
+    app.run(host='0.0.0.0',debug=bool(get_env_variable("DEBUG_MODE")))
     

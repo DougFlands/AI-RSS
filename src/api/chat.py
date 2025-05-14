@@ -7,7 +7,7 @@ chat_bp = Blueprint("chat", __name__, url_prefix="/chat")
 chatSessions = {}
 
 @chat_bp.route('/', methods=['POST'])
-def PostChat():
+def post_chat():
     data = request.get_json()
     userInput = data.get('message')
     sessionId = data.get('sessionId')
@@ -23,7 +23,7 @@ def PostChat():
         chatSessions[sessionId] = aiChat
 
     try:
-        aiResponse = aiChat.getResponse(userInput)
+        aiResponse = aiChat.get_response(userInput)
         return jsonify({
             "sessionId": sessionId,
             "response": aiResponse

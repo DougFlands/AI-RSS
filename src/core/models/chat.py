@@ -3,7 +3,7 @@ import time
 from typing import Literal
 
 from src.core.langchain.ollama import ChatManager
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 from cozepy import COZE_CN_BASE_URL
 from cozepy import Coze, TokenAuth, Message, ChatStatus
 from openai import OpenAI
@@ -13,23 +13,23 @@ class AIChat:
         self.history = []
         self.system_prompt = system_prompt
 
-    def addHistory(self, user_message, aiResponse):
-        self.history.append({"user": user_message, "ai": aiResponse})
+    def add_history(self, user_message, ai_response):
+        self.history.append({"user": user_message, "ai": ai_response})
 
-    def getResponse(self, user_input):
+    def get_response(self, user_input):
         if self.modelType == "ollama":
-            return self._ollamaGenerate(user_input)
+            return self._ollama_generate(user_input)
         elif self.modelType == "coze":
-            return self._cozeGenerate(user_input)
+            return self._coze_generate(user_input)
         elif self.modelType == "deepseek":
-            return self._deepseekGenerate(user_input)
+            return self._deepseek_generate(user_input)
         else:
             raise ValueError("Invalid model type")
 
-    def _ollamaGenerate(self, user_input):
+    def _ollama_generate(self, user_input):
         # 直接调用模式
         # url = "http://localhost:11434/api/generate"
-        # prompt = self._generatePrompt(user_input)
+        # prompt = self._generate_prompt(user_input)
         # data = {
         #     "model": "deepseek-r1:8b",
         #     "prompt": prompt,
@@ -64,11 +64,11 @@ class AIChat:
         return answer
 
 
-    def _cozeGenerate(self, user_input):
+    def _coze_generate(self, user_input):
         
-        coze = Coze(auth=TokenAuth(token=getEnvVariable("COZE_API_KEY")), base_url=COZE_CN_BASE_URL)
-        bot_id = getEnvVariable("COZE_BOT_ID")
-        user_id = getEnvVariable("COZE_USER_ID")
+        coze = Coze(auth=TokenAuth(token=get_env_variable("COZE_API_KEY")), base_url=COZE_CN_BASE_URL)
+        bot_id = get_env_variable("COZE_BOT_ID")
+        user_id = get_env_variable("COZE_USER_ID")
 
         chat_poll = coze.chat.create_and_poll(
             bot_id=bot_id,
@@ -112,8 +112,8 @@ class AIChat:
 
         return answer
     
-    def _deepseekGenerate(self, user_input):
-        client = OpenAI(api_key=getEnvVariable("DEEPSEEK_KEY"), base_url="https://api.deepseek.com")
+    def _deepseek_generate(self, user_input):
+        client = OpenAI(api_key=get_env_variable("DEEPSEEK_KEY"), base_url="https://api.deepseek.com")
         response = client.chat.completions.create(
             model="deepseek-reasoner",
             messages=[
@@ -132,7 +132,7 @@ class AIChat:
             
         return content
     
-    def _generatePrompt(self, user_input):
+    def _generate_prompt(self, user_input):
         context = ["你是一个聊天机器人，正在与一个用户进行对话。"]
         for item in self.history:
             context.append(f"用户问: {item['user']}")

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.core.models.rss import OutputRss, search_rss_feeds, get_all_rss_feeds, ParseRss
+from src.core.models.rss import output_rss, search_rss_feeds, get_all_rss_feeds, parse_rss
 from src.core.storage.rss_storage import RSSStorage
 from datetime import datetime
 from bson.objectid import ObjectId
@@ -8,7 +8,7 @@ rss_bp = Blueprint("rss", __name__, url_prefix="/rss")
 rss_storage = RSSStorage()
 
 @rss_bp.route('/story', methods=['POST'])
-def GetStoryRss():
+def get_story_rss():
     data = request.get_json()
     # 验证参数
     if not data or 'query' not in data:
@@ -22,11 +22,11 @@ def GetStoryRss():
     return results
 
 @rss_bp.route('/', methods=['GET'])
-def GetRss():
-    return OutputRss()
+def get_rss():
+    return output_rss()
 
 @rss_bp.route('/all', methods=['GET'])
-def GetAllRss():
+def get_all_rss():
     limit = request.args.get('limit', 20, type=int)
     date = request.args.get('date')
     preference = request.args.get('preference')  # 添加喜好状态筛选参数：liked/disliked/unmarked/recommended/all
@@ -151,7 +151,7 @@ def GetAllRss():
     return feeds
 
 @rss_bp.route('/preference', methods=['POST'])
-def StorePreference():
+def store_preference():
     data = request.get_json()
     # 验证参数
     if not data or 'feed_id' not in data or 'is_liked' not in data:
@@ -167,7 +167,7 @@ def StorePreference():
     return jsonify(result)
 
 @rss_bp.route('/dates', methods=['GET'])
-def GetDatesWithData():
+def get_dates_with_data():
     """
     获取所有有RSS数据的日期列表
     """
@@ -176,7 +176,7 @@ def GetDatesWithData():
 
 # 新增的RSS源管理相关API
 @rss_bp.route('/sources', methods=['GET'])
-def GetSources():
+def get_sources():
     """
     获取所有RSS订阅源
     """
@@ -184,7 +184,7 @@ def GetSources():
     return jsonify(sources)
 
 @rss_bp.route('/sources', methods=['POST'])
-def AddSource():
+def add_source():
     """
     添加新的RSS订阅源
     """
@@ -199,7 +199,7 @@ def AddSource():
     # 验证URL并尝试解析RSS
     try:
         # 尝试解析RSS，如果成功则添加源
-        entries = ParseRss(url)
+        entries = parse_rss(url)
         if not entries:
             return jsonify({'error': 'Invalid RSS feed or no entries found'}), 400
         
@@ -214,7 +214,7 @@ def AddSource():
         return jsonify({'error': f'Failed to parse RSS: {str(e)}'}), 400
 
 @rss_bp.route('/sources/<source_id>', methods=['DELETE'])
-def DeleteSource(source_id):
+def delete_source(source_id):
     """
     删除RSS订阅源
     """
@@ -228,7 +228,7 @@ def DeleteSource(source_id):
         return jsonify({'error': f'Failed to delete RSS source: {str(e)}'}), 500
 
 @rss_bp.route('/sources/<source_id>', methods=['PUT'])
-def UpdateSource(source_id):
+def update_source(source_id):
     """
     修改RSS订阅源
     """
@@ -249,7 +249,7 @@ def UpdateSource(source_id):
         if url:
             try:
                 # 尝试解析RSS，验证URL有效性
-                entries = ParseRss(url)
+                entries = parse_rss(url)
                 if not entries:
                     return jsonify({'error': 'Invalid RSS feed or no entries found'}), 400
             except Exception as e:
@@ -265,6 +265,6 @@ def UpdateSource(source_id):
         return jsonify({'error': f'Failed to update RSS source: {str(e)}'}), 500
 
 @rss_bp.route('/error', methods=['GET'])
-def TestError(source_id):
+def test_error(source_id):
     1/0
     return 'error', 500

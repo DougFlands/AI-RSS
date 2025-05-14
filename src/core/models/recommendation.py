@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 from src.core.storage.rss_storage import RSSStorage
 from src.core.storage.mongodb_storage import MongoDBStorage
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 import logging
 
 # 设置日志

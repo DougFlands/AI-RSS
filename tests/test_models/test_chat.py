@@ -12,7 +12,7 @@ class TestAIChat(unittest.TestCase):
         self.assertEqual(self.chat.history, [])
         
     def test_add_history(self):
-        self.chat.addHistory("Hello", "Hi there")
+        self.chat.add_history("Hello", "Hi there")
         self.assertEqual(len(self.chat.history), 1)
         self.assertEqual(self.chat.history[0]["user"], "Hello")
         self.assertEqual(self.chat.history[0]["ai"], "Hi there")
@@ -24,7 +24,7 @@ class TestAIChat(unittest.TestCase):
         mock_instance.chat.return_value = "Test response"
         mock_chat_manager.return_value = mock_instance
         
-        result = self.chat._ollamaGenerate("Test input")
+        result = self.chat._ollama_generate("Test input")
         
         
         self.assertTrue(result["response"], "Expected a non-empty response")
@@ -39,6 +39,6 @@ class TestAIChat(unittest.TestCase):
         mock_instance.chat.create_and_poll.return_value = mock_chat_poll
         mock_coze.return_value = mock_instance
         
-        result = self.chat._cozeGenerate("Test input")
+        result = self.chat._coze_generate("Test input")
         
         self.assertEqual(result["model"], "coze")

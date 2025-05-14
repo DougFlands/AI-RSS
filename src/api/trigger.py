@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify
 from src.core.utils.config import RSS_SYSTEM_PROMPT
 from src.core.models.chat import AIChat
-from src.core.models.email import SendEmail
-from src.core.models.rss import OutputRss
+from src.core.models.email import send_email
+from src.core.models.rss import output_rss
 
 trigger_bp = Blueprint("trigger", __name__, url_prefix="/trigger")
 
 @trigger_bp.route('/', methods=['POST'])
-def GetTrigger():
+def get_trigger():
     data = request.get_json()
     
-    outputRss = OutputRss()
+    outputRss = output_rss()
     
     body = ""
     
@@ -18,7 +18,7 @@ def GetTrigger():
         modelType = data.get('modelType')
         aiChat = AIChat(modelType, system_prompt=RSS_SYSTEM_PROMPT)
         s = str(value)
-        aiResponse = aiChat.getResponse(s)
+        aiResponse = aiChat.get_response(s)
         
         recipients = data.get("recipients")  
         subject =data.get("subject")       
@@ -28,6 +28,6 @@ def GetTrigger():
         if not recipients or not subject or not body:
             return jsonify({"error": "Missing recipients, subject, or body"}), 400
 
-    SendEmail(subject, recipients, body)
+    send_email(subject, recipients, body)
     
     return jsonify({"message": "success"})

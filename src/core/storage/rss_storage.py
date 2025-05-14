@@ -1,12 +1,12 @@
 import chromadb
 from chromadb.config import Settings
 from datetime import datetime
-from src.core.utils.config import getEnvVariable
+from src.core.utils.config import get_env_variable
 from src.core.storage.mongodb_storage import MongoDBStorage
 
-CHROMA_COLLECTION_NAME = getEnvVariable("CHROMA_COLLECTION_NAME")
-CHROMA_HOST = getEnvVariable("CHROMA_HOST")
-CHROMA_PORT = getEnvVariable("CHROMA_PORT")
+CHROMA_COLLECTION_NAME = get_env_variable("CHROMA_COLLECTION_NAME")
+CHROMA_HOST = get_env_variable("CHROMA_HOST")
+CHROMA_PORT = get_env_variable("CHROMA_PORT")
 
 class RSSStorage:
     def __init__(self, collection_name=CHROMA_COLLECTION_NAME, host=CHROMA_HOST, port=CHROMA_PORT):
