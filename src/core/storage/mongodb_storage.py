@@ -6,8 +6,8 @@ from datetime import datetime
 class MongoDBStorage:
     def __init__(self, collection_name="user_preferences"):
         # 从环境变量获取MongoDB连接信息
-        mongo_uri = get_env_variable("MONGODB_URI") or "mongodb://192.168.2.4:47017/"
-        db_name = get_env_variable("MONGODB_DB_NAME") or "rss_app"
+        mongo_uri = get_env_variable("MONGODB_URI") 
+        db_name = get_env_variable("MONGODB_DB_NAME")
         
         # 连接到MongoDB
         self.client = MongoClient(mongo_uri)

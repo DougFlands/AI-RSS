@@ -1,5 +1,6 @@
 from datetime import datetime
 import time
+import os
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
@@ -12,7 +13,6 @@ def create_app():
     # 启用CORS
     CORS(app)
     
-    app.config.from_pyfile("../instance/config.py") 
     mail.init_app(app)
     
     from src.api.rss import rss_bp

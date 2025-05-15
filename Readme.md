@@ -93,6 +93,10 @@ pytest tests/test_models/test_rss.py
 ## 生成覆盖率报告
 pytest --cov-report html
 
+pip install sentry_sdk
+pip freeze > requirements.txt
+podman build -f .\Dockerfile -t rss-ai
+podman run --env-file ./production.env rss-ai
+
 # TODO:
 * PWA
-* docker
