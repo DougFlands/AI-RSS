@@ -1,13 +1,20 @@
 import re
+from venv import logger
 import feedparser
 from flask import json
 from src.core.models.chat import AIChat
 from src.core.utils.config import RSS_SYSTEM_PROMPT
 from src.core.storage.rss_storage import RSSStorage
+import logging
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
+# 设置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # 初始化 RSS 存储
 rss_storage = RSSStorage()
-url = "http://localhost:5000/chat" 
 aiChat = AIChat(modelType="deepseek", system_prompt=RSS_SYSTEM_PROMPT)
 
 def parse_rss(url):
@@ -68,6 +75,8 @@ def output_rss():
     """
     rss_urls = rss_storage.get_all_rss_urls()
     entries = {}
+    logger.warning(rss_urls)
+    
     for rss_source in rss_urls:
         url = rss_source["url"]
         try:
