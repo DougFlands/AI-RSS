@@ -94,9 +94,9 @@ pytest tests/test_models/test_rss.py
 pytest --cov-report html
 
 pip install sentry_sdk
-pip freeze > requirements.txt
-podman build -f .\Dockerfile -t rss-ai
-podman run --env-file ./production.env rss-ai
 
-# TODO:
-* PWA
+podman build -f .\Dockerfile -t rss-ai
+podman run --env-file ./production.env -p 5000:5000 rss-ai
+
+注意:
+1. production.env 里只有 key=value, value 不能有引号

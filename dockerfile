@@ -59,7 +59,7 @@ COPY pyproject.toml ./
 COPY --from=frontend-builder /app/web/dist/ ./web/dist/
 
 # 使用PyInstaller打包成二进制文件
-RUN pyinstaller --onefile --name flask-ai-app --hidden-import=chromadb.telemetry.product.posthog --hidden-import=chromadb.api.fastapi main.py
+RUN pyinstaller --onefile --name rss-ai --hidden-import=chromadb.telemetry.product.posthog --hidden-import=chromadb.api.fastapi  --hidden-import=onnxruntime main.py
 
 # 第三阶段：创建最终镜像
 FROM debian:bookworm-slim
@@ -73,10 +73,12 @@ COPY --from=backend-builder /usr/local/bin/python3.12 /usr/local/bin/python3.12
 RUN ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3
 
 # 复制二进制可执行文件
-COPY --from=backend-builder /app/dist/flask-ai-app ./
+COPY --from=backend-builder /app/dist/rss-ai ./
 
 # 复制前端静态文件
 COPY --from=frontend-builder /app/web/dist/ ./web/dist/
+
+COPY onnx.tar.gz /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2/
 
 # 设置环境变量
 ENV PYTHONPATH=/app
@@ -84,6 +86,5 @@ ENV PYTHONPATH=/app
 # 暴露应用端口
 EXPOSE 5000
 
-# 启动命令 - 修改为使用dotenv加载环境变量
-# ENTRYPOINT ["./flask-ai-app"] 
-CMD ["sh", "-c", "while :; do :; done"]
+ENTRYPOINT ["./rss-ai"] 
+# run --env-file ./production.env rss-ai

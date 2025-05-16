@@ -57,10 +57,6 @@ const props = defineProps({
   }
 });
 
-watchEffect(() => {
-  console.log(props.isLoading);
-}, { immediate: true });
-
 // 创建 Intersection Observer 监听滚动到底部
 let observer = null;
 
