@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.core.utils.config import RSS_SYSTEM_PROMPT
+from src.core.utils.config import RSS_SYSTEM_PROMPT, get_env_variable
 from src.core.models.chat import AIChat
 from src.core.models.email import send_email
 from src.core.models.rss import output_rss
@@ -28,6 +28,7 @@ def get_trigger():
         if not recipients or not subject or not body:
             return jsonify({"error": "Missing recipients, subject, or body"}), 400
 
-    send_email(subject, recipients, body)
+    if get_env_variable("TIMED_SEND_MAIL") == "True": 
+        send_email(subject, recipients, body)
     
     return jsonify({"message": "success"})

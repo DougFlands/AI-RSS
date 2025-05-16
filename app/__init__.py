@@ -119,8 +119,6 @@ def call_api_on_start():
         requests.post(url, json={"recipients":[get_env_variable("MAIL_RECIPIENTS")], "subject":"项目的测试邮件", "body":"<h1>测试邮件</h1>"})
 
 def call_api_timed():
-    if get_env_variable("TIMED_SEND_MAIL") == "False": 
-        return
     print("定时任务启动")
     while True:
         now = datetime.now()
