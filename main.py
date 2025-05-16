@@ -14,6 +14,7 @@ if sentry_dsn:
 
 app = create_app()
 
+print("新版本: 1.0")
 
 if __name__ == "__main__":
     # 创建线程
