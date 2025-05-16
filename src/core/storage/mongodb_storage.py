@@ -8,20 +8,9 @@ class MongoDBStorage:
         # 从环境变量获取MongoDB连接信息
         mongo_uri = get_env_variable("MONGODB_URI") 
         db_name = get_env_variable("MONGODB_DB_NAME")
-        db_user = get_env_variable("MONGODB_DB_USER")
-        db_pwd = get_env_variable("MONGODB_DB_PWD")  # 修复变量名错误
-        
-        # 连接到MongoDB
-        if db_user and db_pwd:
-            # 如果有验证信息，使用验证连接
-            self.client = MongoClient(mongo_uri)
-            self.db = self.client[db_name]
-            # 进行身份验证
-            self.db.authenticate(db_user, db_pwd)
-        else:
-            # 没有验证信息，直接连接
-            self.client = MongoClient(mongo_uri)
-            self.db = self.client[db_name]
+
+        self.client = MongoClient(mongo_uri)
+        self.db = self.client[db_name]
             
         self.collection = self.db[collection_name]
         # RSS源存储集合
