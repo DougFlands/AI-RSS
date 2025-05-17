@@ -25,6 +25,9 @@
         :is-loading="rssQuery.isFetching.value"
         :has-more-items="hasMoreItems"
         @load-more="loadMore"
+        :latest-date="latestDate"
+        :available-dates="availableDates"
+        @latest-date="handleLatestDate"
       />
     </div>
 
@@ -149,6 +152,12 @@ const handleFilterChange = (type) => {
 // 处理源筛选变化
 const handleSourceChange = (sourceId) => {
   selectedSourceId.value = sourceId;
+  resetPagination();
+};
+
+// 处理回到最近日期
+const handleLatestDate = (date) => {
+  selectedDate.value = date;
   resetPagination();
 };
 

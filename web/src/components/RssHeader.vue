@@ -57,7 +57,7 @@
 
 <script setup>
 import { ref, computed, defineEmits, defineProps, watch, onMounted } from 'vue';
-import { Menu } from "@element-plus/icons-vue";
+import { Menu, Calendar } from "@element-plus/icons-vue";
 import { server } from '@/server';
 
 const props = defineProps({
@@ -84,10 +84,10 @@ const props = defineProps({
   isSourcesLoading: {
     type: Boolean,
     default: false
-  }
+  },
 });
 
-const emit = defineEmits(['filter-change', 'date-change', 'source-change', 'toggle-sidebar']);
+const emit = defineEmits(['filter-change', 'date-change', 'source-change', 'toggle-sidebar', 'latest-date']);
 
 const filterType = ref(props.initialFilterType);
 const selectedDate = ref(props.initialSelectedDate);
@@ -117,7 +117,6 @@ const onSourceChange = () => {
 const toggleSidebar = () => {
   emit('toggle-sidebar');
 };
-console.log(props.availableDates)
 
 const disableFutureDates = (date) => {
   // 获取当前日期的ISO字符串并截取日期部分，格式为YYYY-MM-DD
