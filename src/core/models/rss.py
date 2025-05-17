@@ -7,6 +7,7 @@ from src.core.utils.config import RSS_SYSTEM_PROMPT
 from src.core.storage.rss_storage import RSSStorage
 import logging
 import ssl
+from datetime import datetime
 
 ssl._create_default_https_context = ssl._create_unverified_context
 # 设置日志
@@ -19,14 +20,44 @@ aiChat = AIChat(modelType="deepseek", system_prompt=RSS_SYSTEM_PROMPT)
 
 def parse_rss(url):
     feed = feedparser.parse(url)
+    if len(feed.entries)  == 0:
+        logger.warning(url)
+        logger.warning(feed)
+        
     entries = []
     for entry in feed.entries:
+        # 处理日期格式，统一转换为ISO格式
+        published_date = entry.published
+        try:
+            # 尝试解析不同格式的日期
+            dt = None
+            try:
+                # RFC 822 格式，如 'Fri, 16 May 2025 17:07:00 +0800'
+                dt = datetime.strptime(published_date, '%a, %d %b %Y %H:%M:%S %z')
+            except ValueError:
+                try:
+                    # 尝试ISO格式，如 '2025-05-16T00:05:44Z'
+                    dt = datetime.strptime(published_date, '%Y-%m-%dT%H:%M:%SZ')
+                except ValueError:
+                    try:
+                        # 尝试其他常见格式
+                        dt = datetime.strptime(published_date, '%Y-%m-%d %H:%M:%S')
+                    except ValueError:
+                        dt = datetime.strptime(published_date, '%Y-%m-%d')
+            
+            # 统一转换为ISO格式
+            if dt:
+                published_date = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        except (ValueError, TypeError, AttributeError):
+            # 如果解析失败，保留原始格式
+            pass
+            
         entry_data = {
             'title': entry.title,
             'link': entry.link,
             'summary': entry.summary,
             'content': entry.content,
-            'published': entry.published,
+            'published': published_date,
             'source': url,
         }
         if not rss_storage.check_has_feed(entry_data):
@@ -75,8 +106,6 @@ def output_rss():
     """
     rss_urls = rss_storage.get_all_rss_urls()
     entries = {}
-    logger.warning(rss_urls)
-    
     for rss_source in rss_urls:
         url = rss_source["url"]
         try:

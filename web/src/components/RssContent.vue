@@ -10,7 +10,7 @@
       </div>
 
       <div v-else-if="feeds.length === 0" class="flex h-64 items-center justify-center">
-        <el-empty description="暂无RSS数据" />
+        <el-empty description="当前日期无 RSS 数据" />
       </div>
 
       <div v-else class="space-y-4">

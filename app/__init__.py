@@ -127,6 +127,6 @@ def call_api_timed():
         formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
         if now.hour == 9 or now.hour == 18:
             print("开始发送 RSS 邮件 " + formatted_time)
-            requests.post(url, json={"modelType": "coze", "recipients":[get_env_variable("MAIL_RECIPIENTS")], "subject":formatted_time + " RSS"})
+            requests.post(url, json={"modelType": "deepseek", "recipients":[get_env_variable("MAIL_RECIPIENTS")], "subject":formatted_time + " RSS"})
         time.sleep(1800)
 

@@ -28,12 +28,14 @@ def get_rss():
 @rss_bp.route('/all', methods=['GET'])
 def get_all_rss():
     limit = request.args.get('limit', 20, type=int)
-    date = request.args.get('date')
+    date = request.args.get('date') or None
     preference = request.args.get('preference')  # 添加喜好状态筛选参数：liked/disliked/unmarked/recommended/all
     source_id = request.args.get('source_id')  # 添加订阅源筛选参数
-    
+    if date and date == "all":
+        date = None
+
     # 验证日期格式
-    if date:
+    if date :
         try:
             # 验证日期格式是否为 YYYY-MM-DD
             datetime.strptime(date, '%Y-%m-%d')
@@ -57,7 +59,7 @@ def get_all_rss():
         except Exception as e:
             # 如果ID格式不正确或其他错误，返回错误信息
             return jsonify({'error': f'Invalid source_id: {str(e)}'}), 400
-    print(source_url)
+    
     # 如果请求是推荐模式，使用推荐算法
     if preference == 'recommended':
         try:
@@ -72,7 +74,7 @@ def get_all_rss():
             pass
     
     # 根据参数获取数据
-    if date:
+    if date :
         # 按指定日期筛选
         feeds = storage.get_all_feeds(limit, date)
     else:
@@ -82,7 +84,7 @@ def get_all_rss():
     # 确保包含喜好信息
     # 获取所有喜好数据
     preferences = {pref["feed_id"]: pref for pref in storage.mongo_storage.get_all_preferences()}
-    
+
     # 为每个结果添加喜好信息（确保结构完整）
     if 'ids' in feeds and feeds['ids'] and len(feeds['ids']) > 0 and isinstance(feeds['ids'][0], list):
         for i, doc_id in enumerate(feeds['ids'][0]):

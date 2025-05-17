@@ -14,8 +14,6 @@ if sentry_dsn:
 
 app = create_app()
 
-print("新版本: 1.0")
-
 if __name__ == "__main__":
     # 创建线程
     thread1 = threading.Thread(target=call_api_timed)

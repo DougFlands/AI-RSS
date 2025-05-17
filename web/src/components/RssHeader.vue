@@ -117,13 +117,17 @@ const onSourceChange = () => {
 const toggleSidebar = () => {
   emit('toggle-sidebar');
 };
+console.log(props.availableDates)
 
 const disableFutureDates = (date) => {
   // 获取当前日期的ISO字符串并截取日期部分，格式为YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
   
-  // 格式化传入的日期为YYYY-MM-DD格式，以便与availableDates中的日期进行比较
-  const formattedDate = date.toISOString().split('T')[0];
+  // 使用年月日直接构建格式化的日期字符串，避免时区问题
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const formattedDate = `${year}-${month}-${day}`;
   
   // 检查日期是否在未来（禁用未来日期）
   const isFutureDate = formattedDate > today;

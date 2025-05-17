@@ -28,7 +28,6 @@
       />
     </div>
 
-    <!-- 使用 Drawer 组件替换原来的右侧边栏 -->
     <el-drawer
       v-model="drawerVisible"
       direction="ltr"

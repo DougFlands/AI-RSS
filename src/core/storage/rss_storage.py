@@ -189,7 +189,11 @@ class RSSStorage:
                             try:
                                 published = datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
                             except ValueError:
-                                published = datetime.strptime(metadata['published'], '%Y-%m-%d')
+                                try:
+                                    published = datetime.strptime(metadata['published'], '%Y-%m-%d')
+                                except ValueError:
+                                    # 添加对ISO格式的支持
+                                    published = datetime.strptime(metadata['published'], '%Y-%m-%dT%H:%M:%SZ')
                         
                         if published.strftime('%Y-%m-%d') == date:
                             filtered_ids.append(results['ids'][i])
@@ -238,7 +242,11 @@ class RSSStorage:
                                     try:
                                         return datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
                                     except ValueError:
-                                        return datetime.strptime(metadata['published'], '%Y-%m-%d')
+                                        try:
+                                            return datetime.strptime(metadata['published'], '%Y-%m-%d')
+                                        except ValueError:
+                                            # 添加对ISO格式的支持
+                                            return datetime.strptime(metadata['published'], '%Y-%m-%dT%H:%M:%SZ')
                         except (ValueError, TypeError):
                             pass
                         return datetime(1970, 1, 1)  # 默认日期为早期时间
@@ -329,15 +337,31 @@ class RSSStorage:
         """
         # 获取所有数据
         results = self.collection.get()
-        
         # 统计每个日期的数据量
         date_counts = {}
         for metadata in results.get('metadatas', []):
             if 'published' in metadata:
                 try:
                     # 解析日期
-                    published = datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
-                    date_str = published.strftime('%Y-%m-%d')
+                    dt = None
+                    try:
+                        published = datetime.strptime(metadata['published'], '%a, %d %b %Y %H:%M:%S %z')
+                        dt = published
+                    except ValueError:
+                        try:
+                            published = datetime.strptime(metadata['published'], '%Y-%m-%d %H:%M:%S')
+                            dt = published
+                        except ValueError:
+                            try:
+                                published = datetime.strptime(metadata['published'], '%Y-%m-%d')
+                                dt = published
+                            except ValueError:
+                                # ISO格式
+                                published = datetime.strptime(metadata['published'], '%Y-%m-%dT%H:%M:%SZ')
+                                dt = published
+                    
+                    # 使用本地时区的日期，确保与前端日期格式匹配
+                    date_str = dt.strftime('%Y-%m-%d')
                     
                     # 更新计数
                     date_counts[date_str] = date_counts.get(date_str, 0) + 1

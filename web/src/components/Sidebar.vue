@@ -204,10 +204,12 @@ const saveSource = async () => {
       // 更新订阅源
       await api.rss.updateRssSource(editingSourceId.value, newSource.value);
       ElMessage.success("更新订阅源成功");
+      location.reload();
     } else {
       // 添加新订阅源
       await api.rss.addRssSource(newSource.value);
       ElMessage.success("添加订阅源成功");
+      location.reload();
     }
 
     await fetchSources();

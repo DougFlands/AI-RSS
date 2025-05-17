@@ -54,7 +54,6 @@ class AIChat:
         chat_manager = ChatManager(system_prompt=self.system_prompt)
         
         response = chat_manager.chat(user_input=user_input)
-        print("AI:", response)
 
         response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL)
         
