@@ -13,7 +13,10 @@
         <el-skeleton :rows="5" animated />
       </div>
 
-      <div v-else-if="feeds.length === 0" class="flex flex-col h-64 items-center justify-center">
+      <div
+        v-else-if="feeds.length === 0"
+        class="flex flex-col h-64 items-center justify-center"
+      >
         <el-empty description="当前日期无 RSS 数据" />
         <!-- 回到最近日期按钮 -->
         <el-button
@@ -23,7 +26,7 @@
             props.availableDates.size > 0
           "
           @click="goToLatestDate"
-          class="bg-transparent shadow-none flex-shrink-0 "
+          class="bg-transparent shadow-none flex-shrink-0"
           :disabled="selectedDate === props.latestDate"
         >
           回到最近日期
