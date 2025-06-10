@@ -83,15 +83,6 @@ https://github.com/weekend-project-space/top-rss-list
 # 接口文档
 https://apifox.com/apidoc/shared-d9df3dbf-6f83-480d-ae0c-fdc7c65ab8aa
 
-# 测试
-## 运行所有测试
-pytest
-
-## 运行特定测试文件
-pytest tests/test_models/test_rss.py
-
-## 生成覆盖率报告
-pytest --cov-report html
 
 pip install sentry_sdk
 
@@ -100,3 +91,5 @@ podman run --env-file ./production.env -p 5000:5000 rss-ai
 
 注意:
 1. production.env 里只有 key=value, value 不能有引号
+
+podman run -i --rm -e CHROMA_CLIENT_TYPE=http -e CHROMA_HOST=10.11.12.10 -e CHROMA_PORT=48000 -e CHROMA_SSL=false mcp/chroma

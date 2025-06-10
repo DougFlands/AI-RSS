@@ -4,8 +4,8 @@ from typing import Literal
 
 from src.core.langchain.ollama import ChatManager
 from src.core.utils.config import get_env_variable
-from cozepy import COZE_CN_BASE_URL
-from cozepy import Coze, TokenAuth, Message, ChatStatus
+# from cozepy import COZE_CN_BASE_URL
+# from cozepy import Coze, TokenAuth, Message, ChatStatus
 from openai import OpenAI
 class AIChat:
     def __init__(self, modelType: Literal["ollama", "coze", "deepseek"], system_prompt=""):
@@ -19,8 +19,8 @@ class AIChat:
     def get_response(self, user_input):
         if self.modelType == "ollama":
             return self._ollama_generate(user_input)
-        elif self.modelType == "coze":
-            return self._coze_generate(user_input)
+        # elif self.modelType == "coze":
+        #     return self._coze_generate(user_input)
         elif self.modelType == "deepseek":
             return self._deepseek_generate(user_input)
         else:
@@ -63,53 +63,53 @@ class AIChat:
         return answer
 
 
-    def _coze_generate(self, user_input):
+    # def _coze_generate(self, user_input):
         
-        coze = Coze(auth=TokenAuth(token=get_env_variable("COZE_API_KEY")), base_url=COZE_CN_BASE_URL)
-        bot_id = get_env_variable("COZE_BOT_ID")
-        user_id = get_env_variable("COZE_USER_ID")
+    #     coze = Coze(auth=TokenAuth(token=get_env_variable("COZE_API_KEY")), base_url=COZE_CN_BASE_URL)
+    #     bot_id = get_env_variable("COZE_BOT_ID")
+    #     user_id = get_env_variable("COZE_USER_ID")
 
-        chat_poll = coze.chat.create_and_poll(
-            bot_id=bot_id,
-            user_id=user_id,
-            additional_messages=[
-                Message.build_user_question_text(content=user_input+self.system_prompt),
-            ],
-        )   
+    #     chat_poll = coze.chat.create_and_poll(
+    #         bot_id=bot_id,
+    #         user_id=user_id,
+    #         additional_messages=[
+    #             Message.build_user_question_text(content=user_input+self.system_prompt),
+    #         ],
+    #     )   
 
-        max_wait_time = 600 
-        poll_interval = 5 
-        start_time = time.time()
-        is_error = None
+    #     max_wait_time = 600 
+    #     poll_interval = 5 
+    #     start_time = time.time()
+    #     is_error = None
 
-        while True:
-            if chat_poll.chat.status == ChatStatus.COMPLETED:
-                break  
-            elif chat_poll.chat.status == ChatStatus.FAILED:
-                is_error="Coze API Error: Chat failed."
-                break 
-            elif time.time() - start_time > max_wait_time:
-                is_error="Coze API Error: Timeout waiting for response."
-                break 
-            time.sleep(poll_interval)
-        if is_error:
-            return is_error
+    #     while True:
+    #         if chat_poll.chat.status == ChatStatus.COMPLETED:
+    #             break  
+    #         elif chat_poll.chat.status == ChatStatus.FAILED:
+    #             is_error="Coze API Error: Chat failed."
+    #             break 
+    #         elif time.time() - start_time > max_wait_time:
+    #             is_error="Coze API Error: Timeout waiting for response."
+    #             break 
+    #         time.sleep(poll_interval)
+    #     if is_error:
+    #         return is_error
 
-        full_response = ""
-        for message in chat_poll.messages:
-            full_response += message.content
+    #     full_response = ""
+    #     for message in chat_poll.messages:
+    #         full_response += message.content
             
-        parts = re.split(r'\{', full_response, maxsplit=1)
-        if len(parts) >= 1:
-            full_response = parts[0]
-            full_response = full_response.replace("\n", "")
+    #     parts = re.split(r'\{', full_response, maxsplit=1)
+    #     if len(parts) >= 1:
+    #         full_response = parts[0]
+    #         full_response = full_response.replace("\n", "")
             
-        answer = {
-            "model": "coze", 
-            "response": full_response,
-        }
+    #     answer = {
+    #         "model": "coze", 
+    #         "response": full_response,
+    #     }
 
-        return answer
+    #     return answer
     
     def _deepseek_generate(self, user_input):
         client = OpenAI(api_key=get_env_variable("DEEPSEEK_KEY"), base_url="https://api.deepseek.com")

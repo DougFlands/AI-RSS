@@ -11,6 +11,9 @@ dependencies:
   '@tanstack/vue-query':
     specifier: ^5.75.7
     version: 5.75.7(vue@3.5.13)
+  '@types/marked':
+    specifier: ^6.0.0
+    version: 6.0.0
   axios:
     specifier: ^1.6.7
     version: 1.9.0
@@ -23,6 +26,9 @@ dependencies:
   element-plus:
     specifier: ^2.5.6
     version: 2.9.10(vue@3.5.13)
+  marked:
+    specifier: ^15.0.12
+    version: 15.0.12
   tailwindcss:
     specifier: ^3.4.1
     version: 3.4.17
@@ -1892,6 +1898,13 @@ packages:
 
   /@types/lodash@4.17.16:
     resolution: {integrity: sha512-HX7Em5NYQAXKW+1T+FiuG27NGwzJfCX3s1GjOa7ujxZa52kjJLOr4FUxT+giF6Tgxv1e+/czV/iTtBw27WTU9g==}
+    dev: false
+
+  /@types/marked@6.0.0:
+    resolution: {integrity: sha512-jmjpa4BwUsmhxcfsgUit/7A9KbrC48Q0q8KvnY107ogcjGgTFDlIL3RpihNpx2Mu1hM4mdFQjoVc4O6JoGKHsA==}
+    deprecated: This is a stub types definition. marked provides its own type definitions, so you do not need this installed.
+    dependencies:
+      marked: 15.0.12
     dev: false
 
   /@types/node@22.15.17:
@@ -3810,6 +3823,12 @@ packages:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  /marked@15.0.12:
+    resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
+    engines: {node: '>= 18'}
+    hasBin: true
+    dev: false
 
   /math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
