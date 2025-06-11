@@ -8,6 +8,10 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ChatInput: typeof import('./src/components/ChatInput.vue')['default']
+    ChatLoading: typeof import('./src/components/ChatLoading.vue')['default']
+    ChatMessage: typeof import('./src/components/ChatMessage.vue')['default']
+    DialogChat: typeof import('./src/components/DialogChat.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElDatePicker: typeof import('element-plus/es')['ElDatePicker']
