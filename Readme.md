@@ -96,5 +96,8 @@ podman run -i --rm -e CHROMA_CLIENT_TYPE=http -e CHROMA_HOST=10.11.12.10 -e CHRO
 
 解析项目架构，后端是 python + flask + chroma ，前端是 vue3 + element plus + tailwindcss，请分析项目的结构及所用到的技术栈，稍后会提出需求
 
-请使用 chroma mcp 查询 rss_feeds 集合中 06-11 的字符串数据
-我在这里加了一个 chroma mcp 服务，请检测 chroma mcp 服务是否可用，如果服务可用，请给出可用工具，否则直接告诉我能否连接即可。
+请使用 chroma mcp 查询 rss_feeds 集合中包含 06-11 的数据
+
+我在这里加了一个 chroma mcp 服务，请检测 chroma mcp 服务是否可用，如果服务可用，请给出可用工具，否则直接告诉我能否连接
+
+解析项目架构，后端是 python + flask + chroma ，前端是 vue3 + element plus + tailwindcss，请分析项目的结构及所用到的技术栈，稍后会提出需求

@@ -1,24 +1,7 @@
 import axios from "axios";
-import { MCPChatRequest, MCPChatResponse } from "../types";
+import { MCPChatRequest } from "../types";
 
 const API_BASE_URL = "/api";
-
-/**
- * 增强版聊天API - 支持多轮对话和MCP工具调用
- */
-export const sendMCPChatMessage = async (
-  data: MCPChatRequest
-): Promise<MCPChatResponse> => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/chat/msg`, data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    }
-    throw error;
-  }
-};
 
 /**
  * 使用 axios 实现 SSE 流式响应
@@ -28,7 +11,7 @@ export const sendMCPChatMessage = async (
  */
 export const sendStreamingMCPChatMessage = async (
   data: MCPChatRequest,
-  onChunk: (chunk: string, isComplete: boolean, hasToolCall: boolean) => void,
+  onChunk: (chunk: string, isComplete: boolean, hasToolCall: boolean) => void
 ): Promise<{ sessionId: string }> => {
   return new Promise((resolve, reject) => {
     let sessionId = data.sessionId || "";
@@ -37,43 +20,42 @@ export const sendStreamingMCPChatMessage = async (
 
     // 创建 axios 请求配置
     const config = {
-      method: 'post',
+      method: "post",
       url: `${API_BASE_URL}/chat/stream`,
       data: {
         ...data,
-        createStream: true
+        createStream: true,
       },
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
-      responseType: 'stream' as any,
+      responseType: "stream" as any,
       onDownloadProgress: (progressEvent: any) => {
         // 获取新到达的文本数据
         const rawText = progressEvent.event.target.response || "";
-        
         // 如果有新数据
         if (rawText && rawText !== buffer) {
           // 提取新增部分
           const newText = rawText.substring(buffer.length);
           buffer = rawText; // 更新缓冲区
-          
+
           // 处理新增的 SSE 数据
           const lines = newText.split("\n\n");
-          
+
           for (const line of lines) {
             if (!line.trim()) continue;
-            
+
             // 提取 data: 部分
             const match = line.match(/data: (.*)/);
             if (!match) continue;
-            
+
             try {
               const eventData = JSON.parse(match[1]);
               console.log("收到SSE数据:", eventData);
-              
+
               if (eventData.type === "chunk") {
                 // 处理文本块
                 onChunk(eventData.content, false, hasToolCall);
@@ -100,7 +82,7 @@ export const sendStreamingMCPChatMessage = async (
             }
           }
         }
-      }
+      },
     };
 
     // 发送请求
@@ -125,6 +107,5 @@ export const streamChat = {
 };
 
 export default {
-  sendMCPChatMessage,
   sendStreamingMCPChatMessage,
 };
