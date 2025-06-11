@@ -29,6 +29,19 @@
         :available-dates="availableDates"
         @latest-date="handleLatestDate"
       />
+      
+      <!-- 添加悬浮的聊天按钮 -->
+      <div class="fixed right-6 bottom-6">
+        <el-button 
+          type="primary" 
+          circle 
+          size="large" 
+          @click="openChatDialog"
+          class="shadow-lg"
+        >
+          <el-icon><ChatDotRound /></el-icon>
+        </el-button>
+      </div>
     </div>
 
     <el-drawer
@@ -48,6 +61,15 @@
         </div>
       </div>
     </el-drawer>
+    
+    <!-- 添加对话弹窗组件 -->
+    <DialogChat
+      v-model:visible="chatDialogVisible"
+      title="在线对话"
+      @close="handleChatClose"
+      @send="handleChatSend"
+      ref="chatDialog"
+    />
   </div>
 </template>
 
@@ -64,10 +86,32 @@ import {
 } from "vue";
 import Sidebar from "@/components/Sidebar.vue";
 import { server } from "@/server";
+import { ChatDotRound } from '@element-plus/icons-vue';
 
 // 导入封装的组件
 import RssHeader from "@/components/RssHeader.vue";
 import RssContent from "@/components/RssContent.vue";
+import DialogChat from "@/components/DialogChat.vue";
+
+// 对话弹窗状态
+const chatDialogVisible = ref(false);
+const chatDialog = ref(null);
+
+// 打开聊天对话框
+const openChatDialog = () => {
+  chatDialogVisible.value = true;
+};
+
+// 处理对话框关闭
+const handleChatClose = () => {
+  console.log('对话框已关闭');
+};
+
+// 处理发送消息
+const handleChatSend = (message) => {
+  console.log('发送消息:', message);
+  // 这里可以添加发送消息到后端的逻辑
+};
 
 // 使用 TanStack Query 获取日期列表
 const datesQuery = server.rss.useRssDatesQuery();

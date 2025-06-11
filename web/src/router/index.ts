@@ -7,7 +7,7 @@ const routes = [
     path: '/',
     name: 'rss',
     component: RssView
-  }
+  },
 ]
 
 const router = createRouter({

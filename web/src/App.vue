@@ -1,11 +1,29 @@
 <template>
-  <router-view/>
+  <div class="app-container">
+    <router-view />
+  </div>
 </template>
+
+<script>
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+
+export default {
+  setup() {
+    const route = useRoute();
+    const activeRoute = computed(() => route.path);
+
+    return {
+      activeRoute,
+    };
+  },
+};
+</script>
 
 <style>
 body {
   margin: 0;
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
   background-color: #f5f7fa;
 }
 
@@ -13,4 +31,10 @@ body {
 * {
   touch-action: manipulation;
 }
-</style> 
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+</style>
