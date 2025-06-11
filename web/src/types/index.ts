@@ -10,6 +10,7 @@ export interface ChatRequest {
   sessionId?: string;
   modelType?: string;
   systemPrompt?: string;
+  createStream?: boolean;
 }
 
 export interface MCPChatRequest extends ChatRequest {

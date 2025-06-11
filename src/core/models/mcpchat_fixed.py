@@ -1,14 +1,14 @@
 import re
 import json
 import asyncio
-from typing import Dict, List, Any, Optional, AsyncGenerator, Callable
+from typing import Dict, List, Any, Optional, AsyncGenerator, Callable, Union
 
 from src.core.models.chat import AIChat
 from src.core.mcp.utils import run_async, call_mcp_tool, list_mcp_tools, call_mcp_tool_streaming
 from src.core.utils.config import get_env_variable
 
-class MCPChat(AIChat):
-    """支持MCP工具调用的聊天模型类"""
+class MCPChatFixed(AIChat):
+    """支持MCP工具调用的聊天模型类 - 修复版本"""
     
     def __init__(self, modelType, system_prompt=""):
         mcp_url = get_env_variable("MCP_URL")
@@ -61,12 +61,13 @@ class MCPChat(AIChat):
             self.add_message("assistant", response_text)
             return {"response": response_text, "has_tool_call": False}
     
-    async def get_streaming_response(self, user_input: str, callback: Callable[[str, bool], None]) -> None:
+    # 修复版本 - 修改回调函数类型注解并处理可变参数
+    async def get_streaming_response(self, user_input: str, callback: Callable[[str, bool, Optional[bool]], None]) -> None:
         """处理用户输入并以流式方式返回响应
         
         Args:
             user_input: 用户输入文本
-            callback: 回调函数，接收部分响应和是否完成的标志
+            callback: 回调函数，接收部分响应、是否完成的标志，以及可选的工具调用标志
         """
         # 添加用户消息到历史
         self.add_message("user", user_input)
@@ -85,7 +86,7 @@ class MCPChat(AIChat):
             # 检查是否有完整的工具调用代码块
             if "```mcp" in current_buffer and "```" in current_buffer[current_buffer.find("```mcp"):]:
                 # 发送当前缓冲区内容给前端
-                callback(current_buffer, False)
+                callback(current_buffer, False, has_tool_call)
                 current_buffer = ""
                 
                 # 提取最新的工具调用
@@ -100,27 +101,27 @@ class MCPChat(AIChat):
                     try:
                         if tool_name not in self.available_tools:
                             tool_result = f"⚠️ 工具 '{tool_name}' 不可用。可用工具: {', '.join(self.available_tools)}"
-                            callback(tool_result, False)
+                            callback(tool_result, False, has_tool_call)
                         else:
                             # 流式调用MCP工具并实时返回结果
-                            callback(f"✅ 工具 '{tool_name}' 调用中...\n```\n", False)
+                            callback(f"✅ 工具 '{tool_name}' 调用中...\n```\n", False, has_tool_call)
                             async for result_chunk in call_mcp_tool_streaming(tool_name, params, self.mcp_url):
-                                callback(result_chunk, False)
-                            callback("\n```", False)
+                                callback(result_chunk, False, has_tool_call)
+                            callback("\n```", False, has_tool_call)
                     except Exception as e:
                         error_msg = f"❌ 工具 '{tool_name}' 调用失败: {str(e)}"
-                        callback(error_msg, False)
+                        callback(error_msg, False, has_tool_call)
             else:
                 # 发送当前缓冲区内容给前端
                 if current_buffer:
-                    callback(current_buffer, False)
+                    callback(current_buffer, False, has_tool_call)
                     current_buffer = ""
         
         # 添加完整响应到对话历史
         self.add_message("assistant", complete_response)
         
         # 发送完成信号
-        callback("", True)
+        callback("", True, has_tool_call)
     
     async def _get_ai_streaming_response(self, user_input: str) -> AsyncGenerator[str, None]:
         """获取AI模型的流式响应"""

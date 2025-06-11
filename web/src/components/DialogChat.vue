@@ -17,6 +17,13 @@
             :class="['mb-3 flex', message.role === 'user' ? 'justify-end' : '']"
           >
             <div
+              v-if="
+                !(
+                  isLoading &&
+                  index === messages.length - 1 &&
+                  !message.content.trim()
+                ) || message.role === 'user'
+              "
               :class="[
                 'max-w-[70%] px-3.5 py-2.5 rounded-xl relative',
                 message.role === 'user'
@@ -24,7 +31,7 @@
                   : 'bg-white rounded-tl-sm shadow-sm',
               ]"
             >
-              <div 
+              <div
                 class="break-words leading-relaxed markdown-body"
                 v-html="formatMessageContent(message.content, message.has_tool_call)"
               ></div>
@@ -32,30 +39,28 @@
                 {{ formatTime(message.time || new Date()) }}
               </div>
             </div>
-          </div>
-          
-          <!-- 加载状态 -->
-          <div v-if="isLoading" class="mb-3 flex">
-            <div class="px-3.5 py-2.5 bg-white rounded-xl rounded-tl-sm shadow-sm">
-              <div class="flex justify-center items-center h-5">
-                <span
-                  class="w-2 h-2 mx-0.5 bg-gray-400 rounded-full animate-bounce"
-                  style="animation-delay: -0.32s"
-                ></span>
-                <span
-                  class="w-2 h-2 mx-0.5 bg-gray-400 rounded-full animate-bounce"
-                  style="animation-delay: -0.16s"
-                ></span>
-                <span
-                  class="w-2 h-2 mx-0.5 bg-gray-400 rounded-full animate-bounce"
-                ></span>
+
+            <!-- 消息加载动画 -->
+            <div
+              v-if="
+                isLoading &&
+                index === messages.length - 1 &&
+                !message.content.trim() &&
+                message.role === 'assistant'
+              "
+              class="max-w-[70%] px-3.5 py-2.5 bg-white rounded-xl rounded-tl-sm shadow-sm"
+            >
+              <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </div>
           </div>
+
           <div ref="messagesEndRef"></div>
         </div>
 
-        <!-- 输入框 -->
         <div class="p-4 bg-white border-t border-gray-200">
           <div class="flex">
             <el-input
@@ -68,7 +73,7 @@
             <el-button
               @click="sendMessage"
               :disabled="!inputMessage.trim() || isLoading"
-              :class="{'opacity-75': isLoading}"
+              :class="{ 'opacity-75': isLoading }"
               type="primary"
               class="ml-2"
               style="height: 52px"
@@ -87,23 +92,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, defineProps, defineEmits, defineExpose, onMounted } from "vue";
-import { sendMCPChatMessage } from "../api/chat";
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  defineProps,
+  defineEmits,
+  defineExpose,
+  onMounted,
+  getCurrentInstance,
+} from "vue";
+import { sendMCPChatMessage, sendStreamingMCPChatMessage } from "../api/chat";
 import { ChatMessage, MCPChatRequest } from "../types";
-import { marked } from 'marked';
+import { marked } from "marked";
+
+interface MCPService {
+  name: string;
+  url: string;
+}
 
 const props = defineProps({
   visible: {
     type: Boolean,
-    default: false
+    default: false,
   },
   title: {
     type: String,
-    default: "对话"
+    default: "对话",
   },
   initialSystemPrompt: {
     type: String,
-    default: ""
+    default: "",
+  },
+  availableMcpServices: {
+    type: Array as () => MCPService[],
+    default: () => [],
   },
 });
 
@@ -112,16 +136,26 @@ const emit = defineEmits(["update:visible", "close", "send"]);
 // 对话框显示状态
 const dialogVisible = computed({
   get: () => props.visible,
-  set: (value) => emit("update:visible", value)
+  set: (value) => emit("update:visible", value),
 });
+
+// MCP服务列表
+const mcpServices = computed(() => {
+  return props.availableMcpServices.length > 0
+    ? props.availableMcpServices
+    : [{ name: "默认服务", url: "" }];
+});
+
+// 当前选中的MCP服务
+const selectedMcpService = ref("");
 
 // 消息列表
 const messages = ref<ChatMessage[]>([
   {
     content: "欢迎使用对话功能，有什么可以帮助您的？",
     role: "assistant",
-    time: new Date()
-  }
+    time: new Date(),
+  },
 ]);
 
 // 输入消息
@@ -133,16 +167,40 @@ const messagesEndRef = ref<HTMLElement | null>(null);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
-// 会话ID
-const sessionId = ref<string | undefined>(undefined);
+// 会话ID - 为每个MCP服务单独维护一个会话ID
+const sessionIds = ref<Record<string, string>>({});
 
-// 配置 marked 选项
+// 当前会话ID
+const currentSessionId = computed(() => {
+  return sessionIds.value[selectedMcpService.value] || undefined;
+});
+
+// 流式输出相关
+const currentStreamingMessage = ref<ChatMessage | null>(null); // 当前正在流式输出的消息
+const app = getCurrentInstance(); // 获取Vue实例
+
+// 在组件级别定义计时器变量
+const updateTimer = ref<number | null>(null);
+
+// 设置初始MCP服务
 onMounted(() => {
+  if (mcpServices.value.length > 0) {
+    selectedMcpService.value = mcpServices.value[0].url;
+  }
+
+  // 配置 marked 选项
   marked.setOptions({
-    breaks: true,        // 支持换行符转换为 <br>
-    gfm: true,           // 启用 GitHub 风格的 Markdown
+    breaks: true, // 支持换行符转换为 <br>
+    gfm: true, // 启用 GitHub 风格的 Markdown
   });
 });
+
+// 强制DOM更新
+const forceUpdate = () => {
+  if (app && app.proxy) {
+    app.proxy.$forceUpdate();
+  }
+};
 
 // 监听消息变化，自动滚动到底部
 watch(
@@ -157,10 +215,10 @@ watch(
 
 // 格式化时间
 const formatTime = (time: Date) => {
-  return `${time.getHours().toString().padStart(2, "0")}:${time
-    .getMinutes()
+  return `${time
+    .getHours()
     .toString()
-    .padStart(2, "0")}`;
+    .padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`;
 };
 
 // 滚动到底部
@@ -173,34 +231,32 @@ const scrollToBottom = () => {
 // 格式化消息内容，处理MCP工具调用结果和Markdown
 const formatMessageContent = (content: string, has_tool_call?: boolean) => {
   let processedContent = content;
-  
+
   // 处理工具调用结果
   if (has_tool_call) {
     processedContent = content.replace(
       /(✅|❌|⚠️) 工具 '(.+?)' (调用结果|调用失败|不可用).*?```([\s\S]*?)```/g,
       (match, status, toolName, result, toolOutput) => {
-        let className = '';
-        if (status === '✅') className = 'bg-green-50 border-green-200';
-        if (status === '❌') className = 'bg-red-50 border-red-200';
-        if (status === '⚠️') className = 'bg-yellow-50 border-yellow-200';
-        
-        return (
-          `<div class="mt-2 mb-2 border rounded-md overflow-hidden ${className}">
+        let className = "";
+        if (status === "✅") className = "bg-green-50 border-green-200";
+        if (status === "❌") className = "bg-red-50 border-red-200";
+        if (status === "⚠️") className = "bg-yellow-50 border-yellow-200";
+
+        return `<div class="mt-2 mb-2 border rounded-md overflow-hidden ${className}">
             <div class="p-2 font-medium text-sm border-b ${className}">${status} 工具 '${toolName}' ${result}</div>
             <pre class="p-3 text-sm bg-gray-50 overflow-x-auto whitespace-pre-wrap">${toolOutput}</pre>
-          </div>`
-        );
+          </div>`;
       }
     );
   }
-  
+
   // 将剩余内容转换为Markdown
   return marked(processedContent);
 };
 
 // 处理按键事件，支持Enter发送
 const handleKeyDown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
@@ -214,12 +270,12 @@ const sendMessage = async () => {
   error.value = null;
 
   // 添加用户消息
-  const userMessage: ChatMessage = { 
-    role: "user", 
+  const userMessage: ChatMessage = {
+    role: "user",
     content: inputMessage.value,
-    time: new Date()
+    time: new Date(),
   };
-  
+
   messages.value.push(userMessage);
   emit("send", userMessage);
 
@@ -234,28 +290,87 @@ const sendMessage = async () => {
     // 准备请求数据
     const requestData: MCPChatRequest = {
       message: messageToSend,
-      sessionId: sessionId.value,
+      sessionId: currentSessionId.value,
       modelType: "deepseek",
       systemPrompt: props.initialSystemPrompt,
+      mcpUrl: selectedMcpService.value || undefined,
     };
 
-    // 发送请求
-    const response = await sendMCPChatMessage(requestData);
-
-    // 保存会话ID
-    if (response.sessionId) {
-      sessionId.value = response.sessionId;
-    }
-
-    // 添加AI回复
-    const aiMessage: ChatMessage = {
-      content: response.response,
+    // 使用流式输出
+    // 先创建一个空的AI回复消息
+    const streamingMessage: ChatMessage = {
+      content: "",
       role: "assistant",
       time: new Date(),
-      has_tool_call: response.has_tool_call
+      has_tool_call: false,
     };
 
-    messages.value.push(aiMessage);
+    // 添加到消息列表
+    messages.value.push(streamingMessage);
+    currentStreamingMessage.value = streamingMessage;
+
+    // 发送请求，使用回调函数处理流式响应
+    const { sessionId } = await sendStreamingMCPChatMessage(
+      { ...requestData, createStream: true },
+      (chunk: string, isComplete: boolean, hasToolCall: boolean) => {
+        if (currentStreamingMessage.value) {
+          // 更新消息内容
+          currentStreamingMessage.value.content += chunk;
+          console.log("收到数据块:", chunk);
+          
+          // 更新工具调用标记
+          if (hasToolCall) {
+            currentStreamingMessage.value.has_tool_call = true;
+          }
+
+          // 只有当有实际内容时才更新UI
+          if (chunk.trim()) {
+            // 清除之前的计时器
+            if (updateTimer.value) {
+              clearTimeout(updateTimer.value);
+            }
+            
+            // 立即执行一次更新
+            forceUpdate();
+            scrollToBottom();
+
+            // 设置新的计时器
+            updateTimer.value = window.setTimeout(() => {
+              forceUpdate();
+              scrollToBottom();
+              updateTimer.value = null;
+            }, 50);
+          }
+
+          // 完成时更新状态
+          if (isComplete) {
+            // 如果消息为空，从消息列表中移除
+            if (!currentStreamingMessage.value.content.trim()) {
+              const index = messages.value.indexOf(currentStreamingMessage.value);
+              if (index !== -1) {
+                messages.value.splice(index, 1);
+              }
+            }
+
+            // 清理和重置
+            if (updateTimer.value) {
+              clearTimeout(updateTimer.value);
+              updateTimer.value = null;
+            }
+
+            // 最后再强制更新一次
+            forceUpdate();
+            scrollToBottom();
+            currentStreamingMessage.value = null;
+          }
+        }
+      }
+    );
+
+    // 保存会话ID
+    if (sessionId) {
+      sessionIds.value[selectedMcpService.value] = sessionId;
+    }
   } catch (err: any) {
     console.error("发送消息失败:", err);
     error.value = err.message || "发送失败，请稍后重试";
@@ -272,9 +387,31 @@ const handleClose = () => {
 
 // 重置会话
 const resetSession = () => {
-  sessionId.value = undefined;
+  // 重置当前MCP服务的会话ID
+  if (selectedMcpService.value) {
+    delete sessionIds.value[selectedMcpService.value];
+  } else {
+    // 如果没有选中的MCP服务，重置所有会话ID
+    sessionIds.value = {};
+  }
+
   messages.value = [{ content: "会话已重置", role: "assistant", time: new Date() }];
   error.value = null;
+};
+
+// 切换MCP服务
+const switchMcpService = (serviceUrl: string) => {
+  selectedMcpService.value = serviceUrl;
+  // 切换服务时清空消息，但保留会话ID
+  messages.value = [
+    {
+      content: `已切换到 ${
+        mcpServices.value.find((s) => s.url === serviceUrl)?.name || "新"
+      } MCP服务`,
+      role: "assistant",
+      time: new Date(),
+    },
+  ];
 };
 
 // 暴露方法给父组件
@@ -282,13 +419,14 @@ defineExpose({
   addMessage: (message: ChatMessage) => {
     messages.value.push({
       ...message,
-      time: message.time || new Date()
+      time: message.time || new Date(),
     });
   },
   clearMessages: () => {
     messages.value = [{ content: "对话已重置", role: "assistant", time: new Date() }];
   },
-  resetSession
+  resetSession,
+  switchMcpService,
 });
 </script>
 
@@ -305,6 +443,57 @@ defineExpose({
   50% {
     transform: translateY(-5px);
   }
+}
+
+/* 添加加载动画样式 */
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 20px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: #909399;
+  border-radius: 50%;
+  margin: 0 4px;
+  animation: blink 1.4s infinite both;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0.2;
+  }
+  20% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.2;
+  }
+  60% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.markdown-body {
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 /* Markdown 样式 */
@@ -333,7 +522,8 @@ defineExpose({
   margin-bottom: 0.5rem;
 }
 
-.markdown-body ul, .markdown-body ol {
+.markdown-body ul,
+.markdown-body ol {
   padding-left: 1.5rem;
   margin-bottom: 0.5rem;
 }
