@@ -51,7 +51,6 @@ RUN pip install  -r requirements.txt
 COPY main.py ./
 COPY app/ ./app/
 COPY src/ ./src/
-COPY tests/ ./tests/
 COPY pytest.ini ./
 COPY pyproject.toml ./
 

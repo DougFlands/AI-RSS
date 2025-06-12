@@ -21,8 +21,14 @@ def get_trigger():
         aiResponse = aiChat.get_response(s)
         
         recipients = data.get("recipients")  
-        subject =data.get("subject")       
-        body = body + aiResponse.get("response")
+        subject =data.get("subject")
+        
+        if isinstance(aiResponse, dict):
+            body = body + aiResponse.get("response", "")
+        elif isinstance(aiResponse, str):
+            body = body + aiResponse
+        else:
+            body = body + str(aiResponse)
         
         
         if not recipients or not subject or not body:
